@@ -24,21 +24,29 @@ class Game:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if 10 <= event.pos[0] <= 510 and 10 <= event.pos[1] <= 510 and not is_grabbed:
                         grabbed = (int((event.pos[0] - 10) / 62.5), int((event.pos[1] - 10) / 62.5))
+                        figures_desk[grabbed[1]][grabbed[0]].check_possible()
+                        print(figures_desk[grabbed[1]][grabbed[0]].possible_move)
                         pos = event.pos
                         is_grabbed = True
                 if event.type == pygame.MOUSEBUTTONUP:
                     is_grabbed = False
                     pnt = (int((event.pos[0] - 10) / 62.5), int((event.pos[1] - 10) / 62.5))
-                    if figures_desk[pnt[1]][pnt[0]] != None:
+                    print(pnt)
+                    if pnt not in figures_desk[grabbed[1]][grabbed[0]].possible_move:
                         figures_desk[grabbed[1]][grabbed[0]].rect.x = grabbed[0] * 62.5 + 22.25
                         figures_desk[grabbed[1]][grabbed[0]].rect.y = grabbed[1] * 62.5 + 22.25
                     else:
                         figures_desk[grabbed[1]][grabbed[0]].rect.x = pnt[0] * 62.5 + 22.25
                         figures_desk[grabbed[1]][grabbed[0]].rect.y = pnt[1] * 62.5 + 22.25
-                        figures_desk[grabbed[1]][grabbed[0]], figures_desk[pnt[1]][pnt[0]] = figures_desk[pnt[1]][
-                                                                                                 pnt[0]], \
+                        figures_desk[grabbed[1]][grabbed[0]].pos = pnt[::-1]
+                        if figures_desk[pnt[1]][pnt[0]] is not None:
+                            figures_desk[pnt[1]][pnt[0]].kill()
+                        figures_desk[grabbed[1]][grabbed[0]], figures_desk[pnt[1]][pnt[0]] = None, \
                                                                                              figures_desk[grabbed[1]][
                                                                                                  grabbed[0]]
+                        desk[grabbed[1]][grabbed[0]], desk[pnt[1]][pnt[0]] = '.', \
+                                                                             desk[grabbed[1]][
+                                                                                 grabbed[0]]
                 if is_grabbed:
                     np = pygame.mouse.get_pos()
                     figures_desk[grabbed[1]][grabbed[0]].rect.x += np[0] - pos[0]
@@ -49,7 +57,6 @@ class Game:
             t = clock.tick(FPS) / 100000
             self.desk.update(t)
             pygame.display.flip()
-            print(grabbed)
 
 
 class Desk:
@@ -62,7 +69,10 @@ class Desk:
             tmp = []
             for j in range(8):
                 if desk[i][j].rstrip('\n') != '.':
-                    tmp.append(Figure((i, j), desk[i][j]))
+                    if desk[i][j].rstrip('\n')[1] == "P":
+                        tmp.append(Pawn((i, j), desk[i][j]))
+                    else:
+                        tmp.append(Figure((i, j), desk[i][j]))
                 else:
                     tmp.append(None)
             figures_desk.append(tmp)
@@ -118,6 +128,7 @@ class Figure(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = pos[1] * 62.5 + 22.25
         self.rect.y = pos[0] * 62.5 + 22.25
+        self.possible_move = []
 
     def load_image(self, name):
         fullname = os.path.join('DATA', name)
@@ -132,6 +143,21 @@ class Pawn(Figure):
 
     def __init__(self, *args):
         super().__init__(*args)
+
+    def check_possible(self):
+        self.possible_move.clear()
+        tp = "W"
+        dl = 1
+        if self.type[0] == "D":
+            tp = "D"
+            dl = -1
+        if self.pos[0] + dl >= 0:
+            if self.pos[1] - 1 >= 0 and (figures_desk[self.pos[0] + dl][self.pos[1] - 1] is None or
+                                         figures_desk[self.pos[0] + dl][self.pos[1] - 1].type[0] != tp):
+                self.possible_move.append((self.pos[1] - 1, self.pos[0] - 1))
+            if self.pos[1] + 1 < 8 and (figures_desk[self.pos[0] + dl][self.pos[1] + 1] is None or
+                                        figures_desk[self.pos[0] + dl][self.pos[1] + 1].type[0] != tp) != tp:
+                self.possible_move.append((self.pos[1] + 1, self.pos[0] - 1))
 
 
 pygame.init()
