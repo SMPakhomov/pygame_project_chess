@@ -140,10 +140,9 @@ class Figure(pygame.sprite.Sprite):
 
 
 class Pawn(Figure):
-
     def __init__(self, *args):
         super().__init__(*args)
-
+    #ДОБАВИТЬ ПЕРВОЙ ХОД НА ДВА
     def check_possible(self):
         self.possible_move.clear()
         tp = "W"
@@ -152,12 +151,14 @@ class Pawn(Figure):
             tp = "D"
             dl = -1
         if self.pos[0] + dl >= 0:
-            if self.pos[1] - 1 >= 0 and (figures_desk[self.pos[0] + dl][self.pos[1] - 1] is None or
+            if figures_desk[self.pos[0] + dl][self.pos[1]] is None:
+                self.possible_move.append((self.pos[1], self.pos[0] + dl))
+            if self.pos[1] - 1 >= 0 and (not(figures_desk[self.pos[0] + dl][self.pos[1] - 1] is None) and
                                          figures_desk[self.pos[0] + dl][self.pos[1] - 1].type[0] != tp):
-                self.possible_move.append((self.pos[1] - 1, self.pos[0] - 1))
-            if self.pos[1] + 1 < 8 and (figures_desk[self.pos[0] + dl][self.pos[1] + 1] is None or
-                                        figures_desk[self.pos[0] + dl][self.pos[1] + 1].type[0] != tp) != tp:
-                self.possible_move.append((self.pos[1] + 1, self.pos[0] - 1))
+                self.possible_move.append((self.pos[1] - 1, self.pos[0] + dl))
+            if self.pos[1] + 1 < 8 and (not(figures_desk[self.pos[0] + dl][self.pos[1] + 1] is None) and
+                                        figures_desk[self.pos[0] + dl][self.pos[1] + 1].type[0] != tp):
+                self.possible_move.append((self.pos[1] + 1, self.pos[0] + dl))
 
 
 pygame.init()
