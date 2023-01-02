@@ -14,30 +14,58 @@ class Game:
 
     def run(self):
         running = True
+        is_grabbed = False
+        grabbed = (0, 0)
+        pos = (0, 0)
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if 10 <= event.pos[0] <= 510 and 10 <= event.pos[1] <= 510 and not is_grabbed:
+                        grabbed = (int((event.pos[0] - 10) / 62.5), int((event.pos[1] - 10) / 62.5))
+                        pos = event.pos
+                        is_grabbed = True
+                if event.type == pygame.MOUSEBUTTONUP:
+                    is_grabbed = False
+                    pnt = (int((event.pos[0] - 10) / 62.5), int((event.pos[1] - 10) / 62.5))
+                    if figures_desk[pnt[1]][pnt[0]] != None:
+                        figures_desk[grabbed[1]][grabbed[0]].rect.x = grabbed[0] * 62.5 + 22.25
+                        figures_desk[grabbed[1]][grabbed[0]].rect.y = grabbed[1] * 62.5 + 22.25
+                    else:
+                        figures_desk[grabbed[1]][grabbed[0]].rect.x = pnt[0] * 62.5 + 22.25
+                        figures_desk[grabbed[1]][grabbed[0]].rect.y = pnt[1] * 62.5 + 22.25
+                        figures_desk[grabbed[1]][grabbed[0]], figures_desk[pnt[1]][pnt[0]] = figures_desk[pnt[1]][
+                                                                                                 pnt[0]], \
+                                                                                             figures_desk[grabbed[1]][
+                                                                                                 grabbed[0]]
+                if is_grabbed:
+                    np = pygame.mouse.get_pos()
+                    figures_desk[grabbed[1]][grabbed[0]].rect.x += np[0] - pos[0]
+                    figures_desk[grabbed[1]][grabbed[0]].rect.y += np[1] - pos[1]
+                    pos = np
 
             screen.fill((250, 188, 90, 98))
             t = clock.tick(FPS) / 100000
             self.desk.update(t)
             pygame.display.flip()
+            print(grabbed)
 
 
 class Desk:
     def __init__(self, time, color=((240, 240, 240), (100, 100, 100))):
+        global desk, figures_desk
         with open('def_desk.txt', 'r') as file:
-            self.desk = [file.readline().split(' ') for _ in range(8)]
-            self.figures = []
-            for i in range(8):
-                tmp = []
-                for j in range(8):
-                    if self.desk[i][j].rstrip('\n') != '.':
-                        tmp.append(Figure((i, j), self.desk[i][j]))
-                    else:
-                        tmp.append(None)
-                self.figures.append(tmp)
+            desk = [file.readline().split(' ') for _ in range(8)]
+        figures_desk = []
+        for i in range(8):
+            tmp = []
+            for j in range(8):
+                if desk[i][j].rstrip('\n') != '.':
+                    tmp.append(Figure((i, j), desk[i][j]))
+                else:
+                    tmp.append(None)
+            figures_desk.append(tmp)
         self.color = color  # цвет доски - кореж из двух цветов в формате rgb
         self.time = [time, time]
         self.turn = 0  # чей ход
@@ -114,6 +142,9 @@ clock = pygame.time.Clock()
 FPS = 60
 
 figures = pygame.sprite.Group()
+
+desk = []
+figures_desk = []
 
 game = Game()
 game.start()
