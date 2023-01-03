@@ -37,6 +37,12 @@ class Game:
             t = clock.tick(FPS) / 100000
             print(self.is_under_attacks)
             self.update(is_grabbed, grabbed, t)
+            self.check_mat()
+
+    def check_mat(self):
+        for i in (0, 1):
+            if self.is_under_attacks[i] == True and self.desk.kings[i].possible_move == []:
+                self.end_table((i + 1) % 2)
 
     def update(self, is_grabbed, grabbed, t):
         self.desk.draw_desk()
@@ -81,8 +87,6 @@ class Game:
             if figures_desk[grabbed[1]][grabbed[0]].type[0] == "D" and self.desk.turn != 1 or \
                     figures_desk[grabbed[1]][grabbed[0]].type[0] == "W" and self.desk.turn != 0:
                 return is_grabbed, grabbed, pos
-            if self.is_under_attacks[self.desk.turn] and figures_desk[grabbed[1]][grabbed[0]].type[1] != "K":
-                return is_grabbed, grabbed, pos
             figures_desk[grabbed[1]][grabbed[0]].check_possible()
             is_grabbed = True
         return is_grabbed, grabbed, pos
@@ -95,15 +99,31 @@ class Game:
             figures_desk[grabbed[1]][grabbed[0]].rect.x = grabbed[0] * 62.5 + 20.25
             figures_desk[grabbed[1]][grabbed[0]].rect.y = grabbed[1] * 62.5 + 20.25
         else:
+            if figures_desk[grabbed[1]][grabbed[0]].type[1] == "P":
+                figures_desk[grabbed[1]][grabbed[0]].first = False
             figures_desk[grabbed[1]][grabbed[0]].rect.x = pnt[0] * 62.5 + 20.25
             figures_desk[grabbed[1]][grabbed[0]].rect.y = pnt[1] * 62.5 + 20.25
             figures_desk[grabbed[1]][grabbed[0]].pos = pnt[::-1]
-            if figures_desk[pnt[1]][pnt[0]] is not None:
-                figures_desk[pnt[1]][pnt[0]].kill()
-            figures_desk[grabbed[1]][grabbed[0]], figures_desk[pnt[1]][pnt[0]] = None, \
+            # if figures_desk[pnt[1]][pnt[0]] is not None:
+            #     figures_desk[pnt[1]][pnt[0]].kill()
+            figures_desk[grabbed[1]][grabbed[0]], figures_desk[pnt[1]][pnt[0]] = figures_desk[pnt[1]][pnt[0]], \
                                                                                  figures_desk[grabbed[1]][grabbed[0]]
-            desk[grabbed[1]][grabbed[0]], desk[pnt[1]][pnt[0]] = '.', \
-                                                                 desk[grabbed[1]][grabbed[0]]
+            if self.is_under_attacks[self.desk.turn]:
+                b = [self.desk.kings[0].is_under_attack(), self.desk.kings[1].is_under_attack()]
+                if b[self.desk.turn]:
+                    figures_desk[grabbed[1]][grabbed[0]], figures_desk[pnt[1]][pnt[0]] = figures_desk[pnt[1]][pnt[0]], \
+                                                                                         figures_desk[grabbed[1]][
+                                                                                             grabbed[0]]
+                else:
+                    if figures_desk[grabbed[1]][grabbed[0]] is not None:
+                        figures_desk[grabbed[1]][grabbed[0]].kill()
+                        figures_desk[grabbed[1]][grabbed[0]] = None
+            else:
+                if figures_desk[grabbed[1]][grabbed[0]] is not None:
+                    figures_desk[grabbed[1]][grabbed[0]].kill()
+                    figures_desk[grabbed[1]][grabbed[0]] = None
+            # desk[grabbed[1]][grabbed[0]], desk[pnt[1]][pnt[0]] = '.', \
+            #                                                      desk[grabbed[1]][grabbed[0]]
             self.desk.turn += 1
             self.desk.turn %= 2
             self.is_under_attacks = [self.desk.kings[0].is_under_attack(), self.desk.kings[1].is_under_attack()]
@@ -196,6 +216,7 @@ class Figure(pygame.sprite.Sprite):
 class Pawn(Figure):
     def __init__(self, *args):
         super().__init__(*args)
+        self.first = True
 
     # ДОБАВИТЬ ПЕРВОЙ ХОД НА ДВА
     def check_possible(self):
@@ -214,6 +235,8 @@ class Pawn(Figure):
             if self.pos[1] + 1 < 8 and (not (figures_desk[self.pos[0] + dl][self.pos[1] + 1] is None) and
                                         figures_desk[self.pos[0] + dl][self.pos[1] + 1].type[0] != tp):
                 self.possible_move.append((self.pos[1] + 1, self.pos[0] + dl))
+        if self.first:
+            self.possible_move.append((self.pos[1], self.pos[0] + dl * 2))
 
 
 class Horse(Figure):
@@ -367,7 +390,7 @@ class King(Figure):
                             if x + 1 < 8:
                                 tmp.append((x + 1, y + d))
                         self.op_moves += tmp
-                        #ПОФИКСИТЬ КОРОЛЯ
+                        # ПОФИКСИТЬ КОРОЛЯ
                     else:
                         self.op_moves += elem.possible_move
         if self.pos[::-1] in self.op_moves:
@@ -401,4 +424,4 @@ figures_desk = []
 
 game = Game()
 game.start()
-#поправить пешки (доход до конца, дабл шаг)
+# поправить пешки (доход до конца, дабл шаг)
