@@ -23,54 +23,56 @@ class Game:
                 if event.type == pygame.QUIT:
                     running = False
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    if 10 <= event.pos[0] <= 510 and 10 <= event.pos[1] <= 510 and not is_grabbed:
-                        grabbed = (int((event.pos[0] - 10) / 62.5), int((event.pos[1] - 10) / 62.5))
-                        if figures_desk[grabbed[1]][grabbed[0]] is None:
-                            continue
-                        figures_desk[grabbed[1]][grabbed[0]].check_possible()
-                        pos = event.pos
-                        is_grabbed = True
-                        figures_desk[grabbed[1]][grabbed[0]].rect.width += 10
-                        figures_desk[grabbed[1]][grabbed[0]].rect.height += 10
+                    is_grabbed, grabbed, pos = self.mousebuttondown(event, is_grabbed)
                 if event.type == pygame.MOUSEBUTTONUP:
-                    figures_desk[grabbed[1]][grabbed[0]].rect.width -= 10
-                    figures_desk[grabbed[1]][grabbed[0]].rect.height -= 10
-                    if not is_grabbed:
-                        continue
+                    self.mousebuttonup(is_grabbed, grabbed, event)
                     is_grabbed = False
-                    pnt = (int((event.pos[0] - 10) / 62.5), int((event.pos[1] - 10) / 62.5))
-                    print(pnt)
-                    if pnt not in figures_desk[grabbed[1]][grabbed[0]].possible_move:
-                        figures_desk[grabbed[1]][grabbed[0]].rect.x = grabbed[0] * 62.5 + 20.25
-                        figures_desk[grabbed[1]][grabbed[0]].rect.y = grabbed[1] * 62.5 + 20.25
-                    else:
-                        figures_desk[grabbed[1]][grabbed[0]].rect.x = pnt[0] * 62.5 + 20.25
-                        figures_desk[grabbed[1]][grabbed[0]].rect.y = pnt[1] * 62.5 + 20.25
-                        figures_desk[grabbed[1]][grabbed[0]].pos = pnt[::-1]
-                        if figures_desk[pnt[1]][pnt[0]] is not None:
-                            figures_desk[pnt[1]][pnt[0]].kill()
-                        figures_desk[grabbed[1]][grabbed[0]], figures_desk[pnt[1]][pnt[0]] = None, \
-                                                                                             figures_desk[grabbed[1]][
-                                                                                                 grabbed[0]]
-                        desk[grabbed[1]][grabbed[0]], desk[pnt[1]][pnt[0]] = '.', \
-                                                                             desk[grabbed[1]][
-                                                                                 grabbed[0]]
                 if is_grabbed and event.type == pygame.MOUSEMOTION:
                     np = event.pos
                     figures_desk[grabbed[1]][grabbed[0]].rect.x += np[0] - pos[0]
                     figures_desk[grabbed[1]][grabbed[0]].rect.y += np[1] - pos[1]
                     pos = np
             t = clock.tick(FPS) / 100000
-            self.desk.draw_desk()
-            self.desk.draw_timer(t)
-            if is_grabbed:
-                for elem in figures_desk[grabbed[1]][grabbed[0]].possible_move:
-                    print(elem)
-                    pygame.draw.rect(screen, "green",
-                                     pygame.Rect(elem[0] * 62.5 + 20, elem[1] * 62.5 + 20, 63, 63), 5)
-            figures.update()
-            figures.draw(screen)
-            pygame.display.flip()
+            self.update(is_grabbed, grabbed, t)
+
+    def update(self, is_grabbed, grabbed, t):
+        self.desk.draw_desk()
+        self.desk.draw_timer(t)
+        if is_grabbed:
+            for elem in figures_desk[grabbed[1]][grabbed[0]].possible_move:
+                pygame.draw.circle(screen, (0, 255, 0, 100),
+                                   (elem[0] * 62.5 + 51.5, elem[1] * 62.5 + 51.5), 15, 5)
+        figures.update()
+        figures.draw(screen)
+        pygame.display.flip()
+
+    def mousebuttondown(self, event, is_grabbed):
+        pos = event.pos
+        grabbed = (int((event.pos[0] - 10) / 62.5), int((event.pos[1] - 10) / 62.5))
+        if 10 <= event.pos[0] <= 510 and 10 <= event.pos[1] <= 510 and not is_grabbed:
+            if figures_desk[grabbed[1]][grabbed[0]] is None:
+                return is_grabbed, grabbed, pos
+            figures_desk[grabbed[1]][grabbed[0]].check_possible()
+            is_grabbed = True
+        return is_grabbed, grabbed, pos
+
+    def mousebuttonup(self, is_grabbed, grabbed, event):
+        if not is_grabbed:
+            return
+        pnt = (int((event.pos[0] - 10) / 62.5), int((event.pos[1] - 10) / 62.5))
+        if pnt not in figures_desk[grabbed[1]][grabbed[0]].possible_move:
+            figures_desk[grabbed[1]][grabbed[0]].rect.x = grabbed[0] * 62.5 + 20.25
+            figures_desk[grabbed[1]][grabbed[0]].rect.y = grabbed[1] * 62.5 + 20.25
+        else:
+            figures_desk[grabbed[1]][grabbed[0]].rect.x = pnt[0] * 62.5 + 20.25
+            figures_desk[grabbed[1]][grabbed[0]].rect.y = pnt[1] * 62.5 + 20.25
+            figures_desk[grabbed[1]][grabbed[0]].pos = pnt[::-1]
+            if figures_desk[pnt[1]][pnt[0]] is not None:
+                figures_desk[pnt[1]][pnt[0]].kill()
+            figures_desk[grabbed[1]][grabbed[0]], figures_desk[pnt[1]][pnt[0]] = None, \
+                                                                                 figures_desk[grabbed[1]][grabbed[0]]
+            desk[grabbed[1]][grabbed[0]], desk[pnt[1]][pnt[0]] = '.', \
+                                                                 desk[grabbed[1]][grabbed[0]]
 
 
 class Desk:
@@ -101,12 +103,6 @@ class Desk:
         self.color = color  # цвет доски - кореж из двух цветов в формате rgb
         self.time = [time, time]
         self.turn = 0  # чей ход
-
-    # def update(self, t):
-    #     self.draw_desk()
-    #     self.draw_timer(t)
-    #     figures.update()
-    #     figures.draw(screen)
 
     def draw_timer(self, t):
         font = pygame.font.Font(None, 20)
@@ -195,7 +191,6 @@ class Horse(Figure):
         for elem in ar:
             self.check(elem, tp)
             self.check(elem[::-1], tp)
-        print(self.possible_move)
 
     def check(self, ar, tp):
         if 0 <= self.pos[0] + ar[0] < 8:
