@@ -35,14 +35,13 @@ class Game:
                     figures_desk[grabbed[1]][grabbed[0]].rect.y += np[1] - pos[1]
                     pos = np
             t = clock.tick(FPS) / 100000
-            print(self.is_under_attacks)
             self.update(is_grabbed, grabbed, t)
-            self.check_mat()
+            # self.check_mat()
 
-    def check_mat(self):
-        for i in (0, 1):
-            if self.is_under_attacks[i] == True and self.desk.kings[i].possible_move == []:
-                self.end_table((i + 1) % 2)
+    # def check_mat(self):
+    #     for i in (0, 1):
+    #         if self.is_under_attacks[i] == True and self.desk.kings[i].possible_move == []:
+    #             self.end_table((i + 1) % 2)
 
     def update(self, is_grabbed, grabbed, t):
         self.desk.draw_desk()
@@ -101,32 +100,28 @@ class Game:
         else:
             if figures_desk[grabbed[1]][grabbed[0]].type[1] == "P":
                 figures_desk[grabbed[1]][grabbed[0]].first = False
-            figures_desk[grabbed[1]][grabbed[0]].rect.x = pnt[0] * 62.5 + 20.25
-            figures_desk[grabbed[1]][grabbed[0]].rect.y = pnt[1] * 62.5 + 20.25
-            figures_desk[grabbed[1]][grabbed[0]].pos = pnt[::-1]
             # if figures_desk[pnt[1]][pnt[0]] is not None:
             #     figures_desk[pnt[1]][pnt[0]].kill()
+            figures_desk[grabbed[1]][grabbed[0]].pos = pnt[::-1]
             figures_desk[grabbed[1]][grabbed[0]], figures_desk[pnt[1]][pnt[0]] = figures_desk[pnt[1]][pnt[0]], \
                                                                                  figures_desk[grabbed[1]][grabbed[0]]
-            if self.is_under_attacks[self.desk.turn]:
-                b = [self.desk.kings[0].is_under_attack(), self.desk.kings[1].is_under_attack()]
-                if b[self.desk.turn]:
-                    figures_desk[grabbed[1]][grabbed[0]], figures_desk[pnt[1]][pnt[0]] = figures_desk[pnt[1]][pnt[0]], \
-                                                                                         figures_desk[grabbed[1]][
-                                                                                             grabbed[0]]
-                else:
-                    if figures_desk[grabbed[1]][grabbed[0]] is not None:
-                        figures_desk[grabbed[1]][grabbed[0]].kill()
-                        figures_desk[grabbed[1]][grabbed[0]] = None
+            b = [self.desk.kings[0].is_under_attack(), self.desk.kings[1].is_under_attack()]
+            if b[self.desk.turn]:
+                figures_desk[grabbed[1]][grabbed[0]], figures_desk[pnt[1]][pnt[0]] = figures_desk[pnt[1]][pnt[0]], \
+                                                                                     figures_desk[grabbed[1]][
+                                                                                         grabbed[0]]
+                figures_desk[grabbed[1]][grabbed[0]].pos = (grabbed[1], grabbed[0])
+                figures_desk[grabbed[1]][grabbed[0]].rect.x = grabbed[0] * 62.5 + 20.25
+                figures_desk[grabbed[1]][grabbed[0]].rect.y = grabbed[1] * 62.5 + 20.25
             else:
                 if figures_desk[grabbed[1]][grabbed[0]] is not None:
                     figures_desk[grabbed[1]][grabbed[0]].kill()
                     figures_desk[grabbed[1]][grabbed[0]] = None
-            # desk[grabbed[1]][grabbed[0]], desk[pnt[1]][pnt[0]] = '.', \
-            #                                                      desk[grabbed[1]][grabbed[0]]
-            self.desk.turn += 1
-            self.desk.turn %= 2
-            self.is_under_attacks = [self.desk.kings[0].is_under_attack(), self.desk.kings[1].is_under_attack()]
+                figures_desk[pnt[1]][pnt[0]].rect.x = pnt[0] * 62.5 + 20.25
+                figures_desk[pnt[1]][pnt[0]].rect.y = pnt[1] * 62.5 + 20.25
+                self.desk.turn += 1
+                self.desk.turn %= 2
+                self.is_under_attacks = [self.desk.kings[0].is_under_attack(), self.desk.kings[1].is_under_attack()]
 
 
 class Desk:
@@ -390,7 +385,14 @@ class King(Figure):
                             if x + 1 < 8:
                                 tmp.append((x + 1, y + d))
                         self.op_moves += tmp
-                        # ПОФИКСИТЬ КОРОЛЯ
+                    elif elem.type[1] == "K":
+                        tmp = []
+                        y, x = elem.pos
+                        for i in (-1, 1, 0):
+                            for j in (-1, 1, 0):
+                                if 0 <= y + i < 8 and 0 <= x + j < 8:
+                                    tmp.append((x + j, y + i))
+                        self.op_moves += tmp
                     else:
                         self.op_moves += elem.possible_move
         if self.pos[::-1] in self.op_moves:
