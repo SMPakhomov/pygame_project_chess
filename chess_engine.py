@@ -17,6 +17,7 @@ class Game:
         is_grabbed = False
         grabbed = (0, 0)
         pos = (0, 0)
+        is_under_attacks = [False, False]
         while running:
             screen.fill((250, 188, 90, 98))
             for event in pygame.event.get():
@@ -45,12 +46,17 @@ class Game:
         figures.update()
         figures.draw(screen)
         pygame.display.flip()
+        # if 0 == self.desk.time[0]:
+        #     font =
 
     def mousebuttondown(self, event, is_grabbed):
         pos = event.pos
         grabbed = (int((event.pos[0] - 10) / 62.5), int((event.pos[1] - 10) / 62.5))
         if 10 <= event.pos[0] <= 510 and 10 <= event.pos[1] <= 510 and not is_grabbed:
             if figures_desk[grabbed[1]][grabbed[0]] is None:
+                return is_grabbed, grabbed, pos
+            if figures_desk[grabbed[1]][grabbed[0]].type[0] == "D" and self.desk.turn != 1 or \
+                    figures_desk[grabbed[1]][grabbed[0]].type[0] == "W" and self.desk.turn != 0:
                 return is_grabbed, grabbed, pos
             figures_desk[grabbed[1]][grabbed[0]].check_possible()
             is_grabbed = True
@@ -73,6 +79,8 @@ class Game:
                                                                                  figures_desk[grabbed[1]][grabbed[0]]
             desk[grabbed[1]][grabbed[0]], desk[pnt[1]][pnt[0]] = '.', \
                                                                  desk[grabbed[1]][grabbed[0]]
+            self.desk.turn += 1
+            self.desk.turn %= 2
 
 
 class Desk:
@@ -96,7 +104,7 @@ class Desk:
                     elif desk[i][j].rstrip('\n')[1] == "Q":
                         tmp.append(Queen((i, j), desk[i][j]))
                     else:
-                        tmp.append(Figure((i, j), desk[i][j]))
+                        tmp.append(King((i, j), desk[i][j]))
                 else:
                     tmp.append(None)
             figures_desk.append(tmp)
@@ -305,6 +313,34 @@ class Queen(Rook):
             self.possible_move.append((j, i))
             i += v[0]
             j += v[1]
+
+
+class King(Figure):
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.op_moves = []
+
+    def is_under_attack(self):
+        tp = self.type[0]
+        self.op_moves.clear()
+        for elem in figures_desk:
+            if elem is not None and elem.type[0] != tp:
+                elem.check_possible()
+                self.op_moves += elem.possible_move
+        if self.pos in self.op_moves:
+            return True
+
+    def check_possible(self):
+        pos = self.pos
+        self.possible_move.clear()
+        for i in (-1, 0, 1):
+            for j in (-1, 0, 1):
+                tmp = (pos[0] + i, pos[1] + j)
+                if 0 <= tmp[0] < 8 and 0 <= tmp[1] < 8:
+                    if tmp not in self.op_moves and (
+                            figures_desk[tmp[0]][tmp[1]] is None or figures_desk[tmp[0]][tmp[1]].type[0] != self.type[
+                        0]):
+                        self.possible_move.append(tmp[::-1])
 
 
 pygame.init()
