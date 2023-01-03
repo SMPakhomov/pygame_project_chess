@@ -30,18 +30,22 @@ class Game:
                         figures_desk[grabbed[1]][grabbed[0]].check_possible()
                         pos = event.pos
                         is_grabbed = True
+                        figures_desk[grabbed[1]][grabbed[0]].rect.width += 10
+                        figures_desk[grabbed[1]][grabbed[0]].rect.height += 10
                 if event.type == pygame.MOUSEBUTTONUP:
+                    figures_desk[grabbed[1]][grabbed[0]].rect.width -= 10
+                    figures_desk[grabbed[1]][grabbed[0]].rect.height -= 10
                     if not is_grabbed:
                         continue
                     is_grabbed = False
                     pnt = (int((event.pos[0] - 10) / 62.5), int((event.pos[1] - 10) / 62.5))
                     print(pnt)
                     if pnt not in figures_desk[grabbed[1]][grabbed[0]].possible_move:
-                        figures_desk[grabbed[1]][grabbed[0]].rect.x = grabbed[0] * 62.5 + 22.25
-                        figures_desk[grabbed[1]][grabbed[0]].rect.y = grabbed[1] * 62.5 + 22.25
+                        figures_desk[grabbed[1]][grabbed[0]].rect.x = grabbed[0] * 62.5 + 20.25
+                        figures_desk[grabbed[1]][grabbed[0]].rect.y = grabbed[1] * 62.5 + 20.25
                     else:
-                        figures_desk[grabbed[1]][grabbed[0]].rect.x = pnt[0] * 62.5 + 22.25
-                        figures_desk[grabbed[1]][grabbed[0]].rect.y = pnt[1] * 62.5 + 22.25
+                        figures_desk[grabbed[1]][grabbed[0]].rect.x = pnt[0] * 62.5 + 20.25
+                        figures_desk[grabbed[1]][grabbed[0]].rect.y = pnt[1] * 62.5 + 20.25
                         figures_desk[grabbed[1]][grabbed[0]].pos = pnt[::-1]
                         if figures_desk[pnt[1]][pnt[0]] is not None:
                             figures_desk[pnt[1]][pnt[0]].kill()
@@ -56,13 +60,16 @@ class Game:
                     figures_desk[grabbed[1]][grabbed[0]].rect.x += np[0] - pos[0]
                     figures_desk[grabbed[1]][grabbed[0]].rect.y += np[1] - pos[1]
                     pos = np
+            t = clock.tick(FPS) / 100000
+            self.desk.draw_desk()
+            self.desk.draw_timer(t)
             if is_grabbed:
                 for elem in figures_desk[grabbed[1]][grabbed[0]].possible_move:
                     print(elem)
                     pygame.draw.rect(screen, "green",
-                                     pygame.Rect(elem[0] * 62.5 + 19, elem[1] * 62.5 + 19, 63, 63), 0)
-            t = clock.tick(FPS) / 100000
-            self.desk.update(t)
+                                     pygame.Rect(elem[0] * 62.5 + 20, elem[1] * 62.5 + 20, 63, 63), 5)
+            figures.update()
+            figures.draw(screen)
             pygame.display.flip()
 
 
@@ -95,11 +102,11 @@ class Desk:
         self.time = [time, time]
         self.turn = 0  # чей ход
 
-    def update(self, t):
-        self.draw_desk()
-        self.draw_timer(t)
-        figures.update()
-        figures.draw(screen)
+    # def update(self, t):
+    #     self.draw_desk()
+    #     self.draw_timer(t)
+    #     figures.update()
+    #     figures.draw(screen)
 
     def draw_timer(self, t):
         font = pygame.font.Font(None, 20)
@@ -120,7 +127,7 @@ class Desk:
         for i in range(8):
             for j in range(9):
                 if j != 8:
-                    screen.fill(pygame.Color(color), pygame.Rect(62.5 * j + 20, 62.5 * i + 20, 60, 60))
+                    screen.fill(pygame.Color(color), pygame.Rect(62.5 * j + 20, 62.5 * i + 20, 63, 63))
                 if color == self.color[0]:
                     color = self.color[1]
                 else:
@@ -141,8 +148,8 @@ class Figure(pygame.sprite.Sprite):
         self.type = type.strip('\n')
         self.image = self.load_image(self.type + '.png')
         self.rect = self.image.get_rect()
-        self.rect.x = pos[1] * 62.5 + 22.25
-        self.rect.y = pos[0] * 62.5 + 22.25
+        self.rect.x = pos[1] * 62.5 + 20.25
+        self.rect.y = pos[0] * 62.5 + 20.25
         self.possible_move = []
 
     def load_image(self, name):
@@ -275,17 +282,21 @@ class Bishop(Figure):
             j += v[1]
 
 
-class Queen(Rook, Bishop):
+class Queen(Rook):
     def __init__(self, *args):
         super().__init__(*args)
 
     def check_possible(self):
         self.possible_move.clear()
+        self.check()
         v = ((1, 1), (-1, -1), (-1, 1), (1, -1))
         for elem in v:
-            self.check(elem)
+            self.check_b(elem)
 
-    def check(self, v):
+    def check(self):
+        super().check()
+
+    def check_b(self, v):
         tp = self.type[0]
         i = self.pos[0] + v[0]
         j = self.pos[1] + v[1]
@@ -299,48 +310,6 @@ class Queen(Rook, Bishop):
             self.possible_move.append((j, i))
             i += v[0]
             j += v[1]
-
-        tp = self.type[0]
-        i = self.pos[0] - 1
-        while i >= 0:
-            if figures_desk[i][self.pos[1]] is not None:
-                if figures_desk[i][self.pos[1]].type[0] == tp:
-                    break
-                else:
-                    self.possible_move.append((self.pos[1], i))
-                    break
-            self.possible_move.append((self.pos[1], i))
-            i -= 1
-        i = self.pos[0] + 1
-        while i < 8:
-            if figures_desk[i][self.pos[1]] is not None:
-                if figures_desk[i][self.pos[1]].type[0] == tp:
-                    break
-                else:
-                    self.possible_move.append((self.pos[1], i))
-                    break
-            self.possible_move.append((self.pos[1], i))
-            i += 1
-        i = self.pos[1] - 1
-        while i >= 0:
-            if figures_desk[self.pos[0]][i] is not None:
-                if figures_desk[self.pos[0]][i].type[0] == tp:
-                    break
-                else:
-                    self.possible_move.append((i, self.pos[0]))
-                    break
-            self.possible_move.append((i, self.pos[0]))
-            i -= 1
-        i = self.pos[1] + 1
-        while i < 8:
-            if figures_desk[self.pos[0]][i] is not None:
-                if figures_desk[self.pos[0]][i].type[0] == tp:
-                    break
-                else:
-                    self.possible_move.append((i, self.pos[0]))
-                    break
-            self.possible_move.append((i, self.pos[0]))
-            i += 1
 
 
 pygame.init()
