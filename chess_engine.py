@@ -17,37 +17,60 @@ class Game:
         is_grabbed = False
         grabbed = (0, 0)
         pos = (0, 0)
-        is_under_attacks = [False, False]
+        self.is_under_attacks = [False, False]
+        self.is_game_running = True
         while running:
             screen.fill((250, 188, 90, 98))
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-                if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.type == pygame.MOUSEBUTTONDOWN and self.is_game_running:
                     is_grabbed, grabbed, pos = self.mousebuttondown(event, is_grabbed)
-                if event.type == pygame.MOUSEBUTTONUP:
+                if event.type == pygame.MOUSEBUTTONUP and self.is_game_running:
                     self.mousebuttonup(is_grabbed, grabbed, event)
                     is_grabbed = False
-                if is_grabbed and event.type == pygame.MOUSEMOTION:
+                if is_grabbed and event.type == pygame.MOUSEMOTION and self.is_game_running:
                     np = event.pos
                     figures_desk[grabbed[1]][grabbed[0]].rect.x += np[0] - pos[0]
                     figures_desk[grabbed[1]][grabbed[0]].rect.y += np[1] - pos[1]
                     pos = np
             t = clock.tick(FPS) / 100000
+            print(self.is_under_attacks)
             self.update(is_grabbed, grabbed, t)
 
     def update(self, is_grabbed, grabbed, t):
         self.desk.draw_desk()
-        self.desk.draw_timer(t)
+        if self.is_game_running:
+            self.desk.draw_timer(t)
         if is_grabbed:
             for elem in figures_desk[grabbed[1]][grabbed[0]].possible_move:
                 pygame.draw.circle(screen, (0, 255, 0, 100),
                                    (elem[0] * 62.5 + 51.5, elem[1] * 62.5 + 51.5), 15, 5)
         figures.update()
         figures.draw(screen)
+        self.time_check()
+        # for elem in self.desk.kings[1:]:
+        #     for p in elem.op_moves:
+        #         pygame.draw.circle(screen, "red",
+        #                            (p[0] * 62.5 + 51.5, p[1] * 62.5 + 51.5), 15, 5)
         pygame.display.flip()
-        # if 0 == self.desk.time[0]:
-        #     font =
+
+    def time_check(self):
+        b = 0
+        if self.desk.time[0] < 0:
+            b = 2
+        elif self.desk.time[1] < 0:
+            b = 1
+        if b:
+            self.end_table(b)
+
+    def end_table(self, pl):
+        font = pygame.font.Font(None, 50)
+        text = font.render(f"Player {pl} win!", 1, (100, 255, 100))
+        text_x = width // 2 - text.get_width() // 2
+        text_y = height // 2 - text.get_height() // 2
+        screen.blit(text, (text_x, text_y))
+        self.is_game_running = False
 
     def mousebuttondown(self, event, is_grabbed):
         pos = event.pos
@@ -57,6 +80,8 @@ class Game:
                 return is_grabbed, grabbed, pos
             if figures_desk[grabbed[1]][grabbed[0]].type[0] == "D" and self.desk.turn != 1 or \
                     figures_desk[grabbed[1]][grabbed[0]].type[0] == "W" and self.desk.turn != 0:
+                return is_grabbed, grabbed, pos
+            if self.is_under_attacks[self.desk.turn] and figures_desk[grabbed[1]][grabbed[0]].type[1] != "K":
                 return is_grabbed, grabbed, pos
             figures_desk[grabbed[1]][grabbed[0]].check_possible()
             is_grabbed = True
@@ -81,11 +106,13 @@ class Game:
                                                                  desk[grabbed[1]][grabbed[0]]
             self.desk.turn += 1
             self.desk.turn %= 2
+            self.is_under_attacks = [self.desk.kings[0].is_under_attack(), self.desk.kings[1].is_under_attack()]
 
 
 class Desk:
     def __init__(self, time, color=((240, 240, 240), (100, 100, 100))):
         global desk, figures_desk
+        self.kings = []
         with open('def_desk.txt', 'r') as file:
             desk = [file.readline().split(' ') for _ in range(8)]
         figures_desk = []
@@ -105,6 +132,7 @@ class Desk:
                         tmp.append(Queen((i, j), desk[i][j]))
                     else:
                         tmp.append(King((i, j), desk[i][j]))
+                        self.kings.append(tmp[-1])
                 else:
                     tmp.append(None)
             figures_desk.append(tmp)
@@ -323,12 +351,28 @@ class King(Figure):
     def is_under_attack(self):
         tp = self.type[0]
         self.op_moves.clear()
-        for elem in figures_desk:
-            if elem is not None and elem.type[0] != tp:
-                elem.check_possible()
-                self.op_moves += elem.possible_move
-        if self.pos in self.op_moves:
+        for row in figures_desk:
+            for elem in row:
+                if not (elem is None) and elem.type[0] != tp:
+                    elem.check_possible()
+                    if elem.type[1] == "P":
+                        tmp = []
+                        y, x = elem.pos
+                        d = 1
+                        if elem.type[0] == "D":
+                            d = -1
+                        if 8 > y + d >= 0:
+                            if x - 1 >= 0:
+                                tmp.append((x - 1, y + d))
+                            if x + 1 < 8:
+                                tmp.append((x + 1, y + d))
+                        self.op_moves += tmp
+                        #ПОФИКСИТЬ КОРОЛЯ
+                    else:
+                        self.op_moves += elem.possible_move
+        if self.pos[::-1] in self.op_moves:
             return True
+        return False
 
     def check_possible(self):
         pos = self.pos
@@ -337,9 +381,9 @@ class King(Figure):
             for j in (-1, 0, 1):
                 tmp = (pos[0] + i, pos[1] + j)
                 if 0 <= tmp[0] < 8 and 0 <= tmp[1] < 8:
-                    if tmp not in self.op_moves and (
-                            figures_desk[tmp[0]][tmp[1]] is None or figures_desk[tmp[0]][tmp[1]].type[0] != self.type[
-                        0]):
+                    if tmp[::-1] not in self.op_moves and (
+                            figures_desk[tmp[0]][tmp[1]] is None or
+                            figures_desk[tmp[0]][tmp[1]].type[0] != self.type[0]):
                         self.possible_move.append(tmp[::-1])
 
 
@@ -357,3 +401,4 @@ figures_desk = []
 
 game = Game()
 game.start()
+#поправить пешки (доход до конца, дабл шаг)
