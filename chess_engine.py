@@ -275,9 +275,72 @@ class Bishop(Figure):
             j += v[1]
 
 
-# class Queen(Rook, Bishop):
-#     def check_possible(self):
-#         super().__init__()
+class Queen(Rook, Bishop):
+    def __init__(self, *args):
+        super().__init__(*args)
+
+    def check_possible(self):
+        self.possible_move.clear()
+        v = ((1, 1), (-1, -1), (-1, 1), (1, -1))
+        for elem in v:
+            self.check(elem)
+
+    def check(self, v):
+        tp = self.type[0]
+        i = self.pos[0] + v[0]
+        j = self.pos[1] + v[1]
+        while 8 > i >= 0 and 8 > j >= 0:
+            if figures_desk[i][j] is not None:
+                if figures_desk[i][j].type[0] == tp:
+                    break
+                else:
+                    self.possible_move.append((j, i))
+                    break
+            self.possible_move.append((j, i))
+            i += v[0]
+            j += v[1]
+
+        tp = self.type[0]
+        i = self.pos[0] - 1
+        while i >= 0:
+            if figures_desk[i][self.pos[1]] is not None:
+                if figures_desk[i][self.pos[1]].type[0] == tp:
+                    break
+                else:
+                    self.possible_move.append((self.pos[1], i))
+                    break
+            self.possible_move.append((self.pos[1], i))
+            i -= 1
+        i = self.pos[0] + 1
+        while i < 8:
+            if figures_desk[i][self.pos[1]] is not None:
+                if figures_desk[i][self.pos[1]].type[0] == tp:
+                    break
+                else:
+                    self.possible_move.append((self.pos[1], i))
+                    break
+            self.possible_move.append((self.pos[1], i))
+            i += 1
+        i = self.pos[1] - 1
+        while i >= 0:
+            if figures_desk[self.pos[0]][i] is not None:
+                if figures_desk[self.pos[0]][i].type[0] == tp:
+                    break
+                else:
+                    self.possible_move.append((i, self.pos[0]))
+                    break
+            self.possible_move.append((i, self.pos[0]))
+            i -= 1
+        i = self.pos[1] + 1
+        while i < 8:
+            if figures_desk[self.pos[0]][i] is not None:
+                if figures_desk[self.pos[0]][i].type[0] == tp:
+                    break
+                else:
+                    self.possible_move.append((i, self.pos[0]))
+                    break
+            self.possible_move.append((i, self.pos[0]))
+            i += 1
 
 
 pygame.init()
