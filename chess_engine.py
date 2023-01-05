@@ -4,7 +4,7 @@ import sys
 
 
 class Game:
-    def __init__(self, tp=1, time=0.10):
+    def __init__(self, tp=1, time=10):
         self.time = time  # время выделенное под игрока (игрок1, игрок2)
         self.tp = tp  # вариация игры: 1 - против локального игрока, 2 - против ИИ
 
@@ -36,6 +36,7 @@ class Game:
                     pos = np
             t = clock.tick(FPS) / 100000
             self.update(is_grabbed, grabbed, t)
+            print(self.check_possible_solve_mat(0))
 
     def check_mat(self):
         for i in (0, 1):
@@ -62,6 +63,7 @@ class Game:
                             figures_desk[i][j], figures_desk[move[1]][move[0]] = elem, tmp
                             figures_desk[i][j].pos = (j, i)
                             return True
+        return False
 
     def update(self, is_grabbed, grabbed, t):
         self.desk.draw_desk()
@@ -172,6 +174,7 @@ class Desk:
                 else:
                     tmp.append(None)
             figures_desk.append(tmp)
+        self.kings = self.kings[::-1]
         self.color = color  # цвет доски - кореж из двух цветов в формате rgb
         self.time = [time, time]
         self.turn = 0  # чей ход
@@ -219,6 +222,7 @@ class Figure(pygame.sprite.Sprite):
         self.rect.x = pos[1] * 62.5 + 20.25
         self.rect.y = pos[0] * 62.5 + 20.25
         self.possible_move = []
+        self.abs_moves = []
 
     def load_image(self, name):
         fullname = os.path.join('DATA', name)
@@ -235,22 +239,27 @@ class Pawn(Figure):
         self.first = True
 
     def check_possible(self):
+        self.abs_moves.clear()
         self.possible_move.clear()
         tp = "W"
-        dl = 1
+        dl = -1
         if self.type[0] == "D":
             tp = "D"
-            dl = -1
+            dl = 1
         if 8 > self.pos[0] + dl >= 0:
             if figures_desk[self.pos[0] + dl][self.pos[1]] is None:
                 self.possible_move.append((self.pos[1], self.pos[0] + dl))
-            if self.pos[1] - 1 >= 0 and (not (figures_desk[self.pos[0] + dl][self.pos[1] - 1] is None) and
-                                         figures_desk[self.pos[0] + dl][self.pos[1] - 1].type[0] != tp):
-                self.possible_move.append((self.pos[1] - 1, self.pos[0] + dl))
-            if self.pos[1] + 1 < 8 and (not (figures_desk[self.pos[0] + dl][self.pos[1] + 1] is None) and
-                                        figures_desk[self.pos[0] + dl][self.pos[1] + 1].type[0] != tp):
-                self.possible_move.append((self.pos[1] + 1, self.pos[0] + dl))
-        if self.first:
+            if self.pos[1] - 1 >= 0:
+                self.abs_moves.append(figures_desk[self.pos[0] + dl][self.pos[1] - 1])
+                if (not (figures_desk[self.pos[0] + dl][self.pos[1] - 1] is None) and
+                        figures_desk[self.pos[0] + dl][self.pos[1] - 1].type[0] != tp):
+                    self.possible_move.append((self.pos[1] - 1, self.pos[0] + dl))
+            if self.pos[1] + 1 < 8:
+                self.abs_moves.append(figures_desk[self.pos[0] + dl][self.pos[1] + 1])
+                if (not (figures_desk[self.pos[0] + dl][self.pos[1] + 1] is None) and
+                        figures_desk[self.pos[0] + dl][self.pos[1] + 1].type[0] != tp):
+                    self.possible_move.append((self.pos[1] + 1, self.pos[0] + dl))
+        if self.first and 0 <= self.pos[0] + dl * 2 < 8 and figures_desk[self.pos[0] + dl * 2][self.pos[1]] is None:
             self.possible_move.append((self.pos[1], self.pos[0] + dl * 2))
 
 
@@ -260,6 +269,7 @@ class Horse(Figure):
 
     def check_possible(self):
         self.possible_move.clear()
+        self.abs_moves.clear()
         tp = self.type[0]
         ar = ((1, 2), (1, -2), (-1, 2), (-1, -2))
         for elem in ar:
@@ -268,13 +278,11 @@ class Horse(Figure):
 
     def check(self, ar, tp):
         if 0 <= self.pos[0] + ar[0] < 8:
-            if 8 > self.pos[1] + ar[1] >= 0 and (figures_desk[self.pos[0] + ar[0]][self.pos[1] + ar[1]] is None or
-                                                 figures_desk[self.pos[0] + ar[0]][self.pos[1] + ar[1]].type[0] != tp):
-                self.possible_move.append((self.pos[1] + ar[1], self.pos[0] + ar[0]))
-            # if 8 > self.pos[1] + ar[1] >= 0 and figures_desk[self.pos[0] + ar[0]][self.pos[1] + ar[1]] is not None and \
-            #         figures_desk[self.pos[0] + ar[0]][self.pos[1] + ar[1]].type[0] != tp and \
-            #         figures_desk[self.pos[0] + ar[0]][self.pos[1] + ar[1]].type[1] == "K":
-            #     self.mat_ln.append(figures_desk[self.pos[0] + ar[0]][self.pos[1] + ar[1]])
+            if 8 > self.pos[1] + ar[1] >= 0:
+                self.abs_moves.append((self.pos[1] + ar[1], self.pos[0] + ar[0]))
+                if (figures_desk[self.pos[0] + ar[0]][self.pos[1] + ar[1]] is None or
+                        figures_desk[self.pos[0] + ar[0]][self.pos[1] + ar[1]].type[0] != tp):
+                    self.possible_move.append((self.pos[1] + ar[1], self.pos[0] + ar[0]))
 
 
 class Rook(Figure):
@@ -283,12 +291,14 @@ class Rook(Figure):
 
     def check_possible(self):
         self.possible_move.clear()
+        self.abs_moves.clear()
         self.check()
 
     def check(self):
         tp = self.type[0]
         i = self.pos[0] - 1
         while i >= 0:
+            self.abs_moves.append((self.pos[1], i))
             if figures_desk[i][self.pos[1]] is not None:
                 if figures_desk[i][self.pos[1]].type[0] == tp:
                     break
@@ -299,6 +309,7 @@ class Rook(Figure):
             i -= 1
         i = self.pos[0] + 1
         while i < 8:
+            self.abs_moves.append((self.pos[1], i))
             if figures_desk[i][self.pos[1]] is not None:
                 if figures_desk[i][self.pos[1]].type[0] == tp:
                     break
@@ -309,6 +320,7 @@ class Rook(Figure):
             i += 1
         i = self.pos[1] - 1
         while i >= 0:
+            self.abs_moves.append((i, self.pos[0]))
             if figures_desk[self.pos[0]][i] is not None:
                 if figures_desk[self.pos[0]][i].type[0] == tp:
                     break
@@ -319,6 +331,7 @@ class Rook(Figure):
             i -= 1
         i = self.pos[1] + 1
         while i < 8:
+            self.abs_moves.append((i, self.pos[0]))
             if figures_desk[self.pos[0]][i] is not None:
                 if figures_desk[self.pos[0]][i].type[0] == tp:
                     break
@@ -335,6 +348,7 @@ class Bishop(Figure):
 
     def check_possible(self):
         self.possible_move.clear()
+        self.abs_moves.clear()
         v = ((1, 1), (-1, -1), (-1, 1), (1, -1))
         for elem in v:
             self.check(elem)
@@ -344,6 +358,7 @@ class Bishop(Figure):
         i = self.pos[0] + v[0]
         j = self.pos[1] + v[1]
         while 8 > i >= 0 and 8 > j >= 0:
+            self.abs_moves.append((j, i))
             if figures_desk[i][j] is not None:
                 if figures_desk[i][j].type[0] == tp:
                     break
@@ -361,6 +376,7 @@ class Queen(Rook):
 
     def check_possible(self):
         self.possible_move.clear()
+        self.abs_moves.clear()
         self.check()
         v = ((1, 1), (-1, -1), (-1, 1), (1, -1))
         for elem in v:
@@ -374,6 +390,7 @@ class Queen(Rook):
         i = self.pos[0] + v[0]
         j = self.pos[1] + v[1]
         while 8 > i >= 0 and 8 > j >= 0:
+            self.abs_moves.append((j, i))
             if figures_desk[i][j] is not None:
                 if figures_desk[i][j].type[0] == tp:
                     break
@@ -397,28 +414,28 @@ class King(Figure):
             for elem in row:
                 if not (elem is None) and elem.type[0] != tp:
                     elem.check_possible()
-                    if elem.type[1] == "P":
-                        tmp = []
-                        y, x = elem.pos
-                        d = 1
-                        if elem.type[0] == "D":
-                            d = -1
-                        if 8 > y + d >= 0:
-                            if x - 1 >= 0:
-                                tmp.append((x - 1, y + d))
-                            if x + 1 < 8:
-                                tmp.append((x + 1, y + d))
-                        self.op_moves += tmp
-                    elif elem.type[1] == "K":
-                        tmp = []
-                        y, x = elem.pos
-                        for i in (-1, 1, 0):
-                            for j in (-1, 1, 0):
-                                if 0 <= y + i < 8 and 0 <= x + j < 8:
-                                    tmp.append((x + j, y + i))
-                        self.op_moves += tmp
-                    else:
-                        self.op_moves += elem.possible_move
+                    # if elem.type[1] == "P":
+                    #     tmp = []
+                    #     y, x = elem.pos
+                    #     d = -1
+                    #     if elem.type[0] == "D":
+                    #         d = 1
+                    #     if 8 > y + d >= 0:
+                    #         if x - 1 >= 0:
+                    #             tmp.append((x - 1, y + d))
+                    #         if x + 1 < 8:
+                    #             tmp.append((x + 1, y + d))
+                    #     self.op_moves += tmp
+                    # elif elem.type[1] == "K":
+                    #     tmp = []
+                    #     y, x = elem.pos
+                    #     for i in (-1, 1, 0):
+                    #         for j in (-1, 1, 0):
+                    #             if 0 <= y + i < 8 and 0 <= x + j < 8:
+                    #                 tmp.append((x + j, y + i))
+                    #     self.op_moves += tmp
+                    # else:
+                    self.op_moves += elem.abs_moves
         if self.pos[::-1] in self.op_moves:
             return True
         return False
@@ -426,10 +443,12 @@ class King(Figure):
     def check_possible(self):
         pos = self.pos
         self.possible_move.clear()
+        self.abs_moves.clear()
         for i in (-1, 0, 1):
             for j in (-1, 0, 1):
                 tmp = (pos[0] + i, pos[1] + j)
                 if 0 <= tmp[0] < 8 and 0 <= tmp[1] < 8:
+                    self.abs_moves.append((tmp[::-1]))
                     if tmp[::-1] not in self.op_moves and (
                             figures_desk[tmp[0]][tmp[1]] is None or
                             figures_desk[tmp[0]][tmp[1]].type[0] != self.type[0]):
@@ -450,4 +469,4 @@ figures_desk = []
 
 game = Game()
 game.start()
-# поправить пешки (доход до конца)
+# поправить пешки (доход до конца), баг короля руб!

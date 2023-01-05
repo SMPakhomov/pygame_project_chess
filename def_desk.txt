@@ -1,8 +1,8 @@
-WR WH WB WQ WK WB WH WR
-WP WP WP WP WP WP WP WP
-. . . . . . . .
-. . . . . . . .
-. . . . . . . .
-. . . . . . . .
-DP DP DP DP DP DP DP DP
 DR DH DB DQ DK DB DH DR
+DP DP DP DP DP DP DP DP
+. . . . . . . .
+. . . . . . . .
+. . . . . . . .
+. . . . . . . .
+WP WP WP WP WP WP WP WP
+WR WH WB WQ WK WB WH WR
