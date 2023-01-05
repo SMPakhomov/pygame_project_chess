@@ -36,7 +36,7 @@ class Game:
                     pos = np
             t = clock.tick(FPS) / 100000
             self.update(is_grabbed, grabbed, t)
-            print(self.check_possible_solve_mat(0))
+            self.pawn_on_last_point(figures_desk[1][0])
 
     def check_mat(self):
         for i in (0, 1):
@@ -146,9 +146,24 @@ class Game:
                 if figures_desk[pnt[1]][pnt[0]].type[1] == "P":
                     figures_desk[pnt[1]][pnt[0]].first = False
 
+    # def pawn_on_last_point(self, pawn):
+    #     is_choosed = False
+    #     pygame.draw.rect(screen, (250, 188, 90, 98), pygame.Rect(100, 80, 330, 55))
+    #     pygame.draw.rect(screen, "black", pygame.Rect(100, 80, 330, 55), 3)
+    #     font = pygame.font.Font(None, 25)
+    #     text = font.render(f"Выберите фигуру на замену пешке", 1, (250, 250, 250))
+    #     text_x = width // 2 - text.get_width() // 2
+    #     text_y = height // 5 - text.get_height() // 2
+    #     screen.blit(text, (text_x, text_y))
+    #     pygame.display.flip()
+    #     v = []
+    #     while not is_choosed:
+    #         if input() == 'q':
+    #             exit()
+
 
 class Desk:
-    def __init__(self, time, color=((240, 240, 240), (100, 100, 100))):
+    def __init__(self, time, color=((240, 240, 240), (110, 110, 110))):
         global desk, figures_desk
         self.kings = []
         with open('def_desk.txt', 'r') as file:
