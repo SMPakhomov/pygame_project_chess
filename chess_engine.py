@@ -4,7 +4,7 @@ import sys
 
 
 class Game:
-    def __init__(self, tp=1, time=10):
+    def __init__(self, tp=1, time=0.10):
         self.time = time  # время выделенное под игрока (игрок1, игрок2)
         self.tp = tp  # вариация игры: 1 - против локального игрока, 2 - против ИИ
 
@@ -36,12 +36,32 @@ class Game:
                     pos = np
             t = clock.tick(FPS) / 100000
             self.update(is_grabbed, grabbed, t)
-            # self.check_mat()
 
-    # def check_mat(self):
-    #     for i in (0, 1):
-    #         if self.is_under_attacks[i] == True and self.desk.kings[i].possible_move == []:
-    #             self.end_table((i + 1) % 2)
+    def check_mat(self):
+        for i in (0, 1):
+            if self.is_under_attacks[i] and self.desk.kings[i].possible_move == []:
+                if not self.check_possible_solve_mat(i):
+                    if i == 0:
+                        self.end_table(2)
+                    else:
+                        self.end_table(1)
+
+    def check_possible_solve_mat(self, nm):
+        tp = "W" if nm == 0 else "B"
+        for i in range(8):
+            for j in range(8):
+                if figures_desk[i][j] is not None and figures_desk[i][j].type == tp:
+                    elem = figures_desk[i][j]
+                    elem.check_possible()
+                    for move in figures_desk[i][j].possible_move:
+                        figures_desk[i][j].pos = move[::-1]
+                        tmp = figures_desk[move[1]][move[0]]
+                        figures_desk[i][j], figures_desk[move[1]][move[0]] = None, elem
+                        b = [self.desk.kings[0].is_under_attack(), self.desk.kings[1].is_under_attack()]
+                        if not b[nm]:
+                            figures_desk[i][j], figures_desk[move[1]][move[0]] = elem, tmp
+                            figures_desk[i][j].pos = (j, i)
+                            return True
 
     def update(self, is_grabbed, grabbed, t):
         self.desk.draw_desk()
@@ -54,6 +74,7 @@ class Game:
         figures.update()
         figures.draw(screen)
         self.time_check()
+        self.check_mat()
         # for elem in self.desk.kings[1:]:
         #     for p in elem.op_moves:
         #         pygame.draw.circle(screen, "red",
@@ -98,30 +119,30 @@ class Game:
             figures_desk[grabbed[1]][grabbed[0]].rect.x = grabbed[0] * 62.5 + 20.25
             figures_desk[grabbed[1]][grabbed[0]].rect.y = grabbed[1] * 62.5 + 20.25
         else:
-            if figures_desk[grabbed[1]][grabbed[0]].type[1] == "P":
-                figures_desk[grabbed[1]][grabbed[0]].first = False
             # if figures_desk[pnt[1]][pnt[0]] is not None:
             #     figures_desk[pnt[1]][pnt[0]].kill()
             figures_desk[grabbed[1]][grabbed[0]].pos = pnt[::-1]
-            figures_desk[grabbed[1]][grabbed[0]], figures_desk[pnt[1]][pnt[0]] = figures_desk[pnt[1]][pnt[0]], \
+            tmp = figures_desk[pnt[1]][pnt[0]]
+            figures_desk[grabbed[1]][grabbed[0]], figures_desk[pnt[1]][pnt[0]] = None, \
                                                                                  figures_desk[grabbed[1]][grabbed[0]]
             b = [self.desk.kings[0].is_under_attack(), self.desk.kings[1].is_under_attack()]
-            if b[self.desk.turn]:
+            if b[self.desk.turn]:  # !проверить на ошибку
                 figures_desk[grabbed[1]][grabbed[0]], figures_desk[pnt[1]][pnt[0]] = figures_desk[pnt[1]][pnt[0]], \
-                                                                                     figures_desk[grabbed[1]][
-                                                                                         grabbed[0]]
+                                                                                     tmp
                 figures_desk[grabbed[1]][grabbed[0]].pos = (grabbed[1], grabbed[0])
                 figures_desk[grabbed[1]][grabbed[0]].rect.x = grabbed[0] * 62.5 + 20.25
                 figures_desk[grabbed[1]][grabbed[0]].rect.y = grabbed[1] * 62.5 + 20.25
             else:
-                if figures_desk[grabbed[1]][grabbed[0]] is not None:
-                    figures_desk[grabbed[1]][grabbed[0]].kill()
+                if tmp is not None:
+                    tmp.kill()
                     figures_desk[grabbed[1]][grabbed[0]] = None
                 figures_desk[pnt[1]][pnt[0]].rect.x = pnt[0] * 62.5 + 20.25
                 figures_desk[pnt[1]][pnt[0]].rect.y = pnt[1] * 62.5 + 20.25
                 self.desk.turn += 1
                 self.desk.turn %= 2
                 self.is_under_attacks = [self.desk.kings[0].is_under_attack(), self.desk.kings[1].is_under_attack()]
+                if figures_desk[pnt[1]][pnt[0]].type[1] == "P":
+                    figures_desk[pnt[1]][pnt[0]].first = False
 
 
 class Desk:
@@ -213,7 +234,6 @@ class Pawn(Figure):
         super().__init__(*args)
         self.first = True
 
-    # ДОБАВИТЬ ПЕРВОЙ ХОД НА ДВА
     def check_possible(self):
         self.possible_move.clear()
         tp = "W"
@@ -251,6 +271,10 @@ class Horse(Figure):
             if 8 > self.pos[1] + ar[1] >= 0 and (figures_desk[self.pos[0] + ar[0]][self.pos[1] + ar[1]] is None or
                                                  figures_desk[self.pos[0] + ar[0]][self.pos[1] + ar[1]].type[0] != tp):
                 self.possible_move.append((self.pos[1] + ar[1], self.pos[0] + ar[0]))
+            # if 8 > self.pos[1] + ar[1] >= 0 and figures_desk[self.pos[0] + ar[0]][self.pos[1] + ar[1]] is not None and \
+            #         figures_desk[self.pos[0] + ar[0]][self.pos[1] + ar[1]].type[0] != tp and \
+            #         figures_desk[self.pos[0] + ar[0]][self.pos[1] + ar[1]].type[1] == "K":
+            #     self.mat_ln.append(figures_desk[self.pos[0] + ar[0]][self.pos[1] + ar[1]])
 
 
 class Rook(Figure):
@@ -426,4 +450,4 @@ figures_desk = []
 
 game = Game()
 game.start()
-# поправить пешки (доход до конца, дабл шаг)
+# поправить пешки (доход до конца)
