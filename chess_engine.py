@@ -472,6 +472,91 @@ class King(Figure):
                         self.possible_move.append(tmp[::-1])
 
 
+def load_image(name, color_key=None):
+    fullname = os.path.join('DATA', name)
+    try:
+        image = pygame.image.load(fullname)
+    except pygame.error as message:
+        print('Не удаётся загрузить:', name)
+        raise SystemExit(message)
+    image = image.convert_alpha()
+    if color_key is not None:
+        if color_key is -1:
+            color_key = image.get_at((0, 0))
+        image.set_colorkey(color_key)
+    return image
+
+
+def start_screen():
+    intro_text = ["Шахматы - настоящая стратегия", 'Нажмите r, g или b для смены цвета']
+
+    fon = pygame.transform.scale(load_image('start.jpg'), (530, 540))
+    screen.blit(fon, (0, 0))
+    font = pygame.font.Font(None, 30)
+    text_coord = 30
+    for line in intro_text:
+        string_rendered = font.render(line, 1, pygame.Color('black'))
+        intro_rect = string_rendered.get_rect()
+        text_coord += 10
+        intro_rect.top = text_coord
+        intro_rect.x = 10
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+
+    while True:
+        # fname = '83652d558ceb7da2d098f64503e12d3a.png'
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+            elif event.type == pygame.KEYDOWN or \
+                    event.type == pygame.MOUSEBUTTONDOWN:
+                return
+            # elif event.type == pygame.k_r:
+            # change_color(fname, red=True)
+            # elif event.type == pygame.k_g:
+            #   change_color(fname, green=True)
+            # elif event.type == pygame.k_b:
+            # change_color(fname, blue=True)
+        all_sprites.draw(screen)
+        all_sprites.update()
+        pygame.display.flip()
+        clock.tick(FPS_start_screen)
+
+
+def statistic_screen():
+    # con = sqlite3.connect("data\login.db")
+    # cur = con.cursor()
+    # loose, win = (str(cur.execute('''select loose, win
+     #                                from play''',).fetchall())[2:-2]).split()
+    loose, win = 2, 5
+    intro_text = ["Ваша статистика: ", '', f'Поражений: {loose}', f'Побед: {win}', '', 'Для продолжения нажмите']
+
+    fon = pygame.transform.scale(load_image('statistic.jpg'), (530, 540))
+    screen.blit(fon, (0, 0))
+    font = pygame.font.Font(None, 30)
+    text_coord = 20
+    for line in intro_text:
+        string_rendered = font.render(line, 1, pygame.Color('black'))
+        intro_rect = string_rendered.get_rect()
+        text_coord += 10
+        intro_rect.top = text_coord
+        intro_rect.x = 10
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+            elif event.type == pygame.KEYDOWN or \
+                    event.type == pygame.MOUSEBUTTONDOWN:
+                # game = Game()
+                # game.start()
+                pass
+        pygame.display.flip()
+        clock.tick(FPS_start_screen)
+
+
 pygame.init()
 size = width, height = 530, 540
 screen = pygame.display.set_mode((width, height))
@@ -479,11 +564,18 @@ screen = pygame.display.set_mode((width, height))
 clock = pygame.time.Clock()
 FPS = 60
 
+FPS_start_screen = 5
+all_sprites = pygame.sprite.Group()
+
 figures = pygame.sprite.Group()
 
 desk = []
 figures_desk = []
 
+start_screen()
+
 game = Game()
 game.start()
 # поправить пешки (доход до конца), ДОБАВИТЬ ОТКАТ НАЗАД
+
+statistic_screen()
