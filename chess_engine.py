@@ -4,7 +4,7 @@ import sys
 
 
 class Game:
-    def __init__(self, tp=1, time=10):
+    def __init__(self, tp=1, time=10 ):
         self.time = time  # время выделенное под игрока (игрок1, игрок2)
         self.tp = tp  # вариация игры: 1 - против локального игрока, 2 - против ИИ
 
@@ -36,7 +36,7 @@ class Game:
                     pos = np
             t = clock.tick(FPS) / 100000
             self.update(is_grabbed, grabbed, t)
-            self.pawn_on_last_point(figures_desk[1][0])
+            # self.pawn_on_last_point(figures_desk[1][0])
 
     def check_mat(self):
         for i in (0, 1):
@@ -97,6 +97,8 @@ class Game:
         text = font.render(f"Player {pl} win!", 1, (100, 255, 100))
         text_x = width // 2 - text.get_width() // 2
         text_y = height // 2 - text.get_height() // 2
+        pygame.draw.rect(screen, (50, 130, 250), pygame.Rect(text_x - 20, text_y - 10, 250, 55), 0)
+        pygame.draw.rect(screen, (30, 30, 30), pygame.Rect(text_x - 20, text_y - 10, 250, 55), 3)
         screen.blit(text, (text_x, text_y))
         self.is_game_running = False
 
@@ -484,4 +486,4 @@ figures_desk = []
 
 game = Game()
 game.start()
-# поправить пешки (доход до конца), баг короля руб!
+# поправить пешки (доход до конца), ДОБАВИТЬ ОТКАТ НАЗАД
