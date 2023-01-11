@@ -3,11 +3,15 @@ import sqlite3
 from PyQt5 import uic
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton
 from PyQt5.QtWidgets import QMainWindow, QLabel, QLineEdit, QLCDNumber, QCheckBox, QInputDialog, QFileDialog
-# from start_screen import start_screen
+
+start = False
+id = -1
 
 
 class Registration(QWidget):
     def __init__(self):
+        global start
+        global id
         super().__init__()
         uic.loadUi('DATA/registration.ui', self)
         self.sms_label.hide()
@@ -17,7 +21,6 @@ class Registration(QWidget):
         self.registration_btn.hide()
         self.voiti_btn.setText(" ")
         self.setWindowTitle('Авторизация')
-
         type_of_registration, ok_pressed = QInputDialog.getItem(
             self, "Выберите тип входа", "",
             ("Вход", "Регистрация"), 1, False)
@@ -58,7 +61,8 @@ class Registration(QWidget):
             self.sms_label.show()
             self.voiti_btn.hide()
             con.close()
-
+            start = True
+            id = self.id
         else:
             self.sms_label.setText(check)
 
@@ -88,11 +92,12 @@ class Registration(QWidget):
             con.commit()
             con.close()
             self.voiti_btn.hide()
-        # start_screen(self.id)
+            start = True
+            id = self.id
 
 
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    ex = Registration()
-    ex.show()
-    sys.exit(app.exec())
+# if __name__ == '__main__':
+   # app = QApplication(sys.argv)
+   # ex = Registration()
+   # ex.show()
+# sys.exit(app.exec())

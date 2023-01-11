@@ -1,7 +1,8 @@
 import pygame
 import os
 import sys
-
+from registration import Registration, id, start
+from PyQt5.QtWidgets import QApplication
 
 class Game:
     def __init__(self, tp=1, time=10 ):
@@ -523,7 +524,7 @@ def start_screen():
         clock.tick(FPS_start_screen)
 
 
-def statistic_screen():
+def statistic_screen(id):
     # con = sqlite3.connect("data\login.db")
     # cur = con.cursor()
     # loose, win = (str(cur.execute('''select loose, win
@@ -557,9 +558,7 @@ def statistic_screen():
         clock.tick(FPS_start_screen)
 
 
-pygame.init()
-size = width, height = 530, 540
-screen = pygame.display.set_mode((width, height))
+
 
 clock = pygame.time.Clock()
 FPS = 60
@@ -572,10 +571,21 @@ figures = pygame.sprite.Group()
 desk = []
 figures_desk = []
 
-start_screen()
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    ex = Registration()
+    ex.show()
+    sys.exit(app.exec())
 
-game = Game()
-game.start()
-# поправить пешки (доход до конца), ДОБАВИТЬ ОТКАТ НАЗАД
+print(start)
+if start:
 
-statistic_screen()
+    pygame.init()
+    size = width, height = 530, 540
+    screen = pygame.display.set_mode((width, height))
+    start_screen()
+    game = Game()
+    game.start()
+    # поправить пешки (доход до конца), ДОБАВИТЬ ОТКАТ НАЗАД
+
+    statistic_screen(id)
