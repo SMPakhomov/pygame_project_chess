@@ -525,10 +525,12 @@ def start_screen():
 
 
 def statistic_screen(id):
-    # con = sqlite3.connect("data\login.db")
-    # cur = con.cursor()
-    # loose, win = (str(cur.execute('''select loose, win
-     #                                from play''',).fetchall())[2:-2]).split()
+    #con = sqlite3.connect("DATA/new.db")
+    #cur = con.cursor()
+    #loose, win = (str(cur.execute('''select loose, win
+     #                                from play
+      #                               where person like ?''', (id)).fetchall())[2:-2]).split()
+    #print(loose, win)
     loose, win = 2, 5
     intro_text = ["Ваша статистика: ", '', f'Поражений: {loose}', f'Побед: {win}', '', 'Для продолжения нажмите']
 
@@ -617,7 +619,7 @@ class Registration(QWidget):
             self.sms_label.show()
             self.voiti_btn.hide()
             id = self.id
-            print('авторизация, id получен')
+         #   print('авторизация, id получен')
             con.close()
         else:
             self.sms_label.setText(check)
@@ -646,7 +648,7 @@ class Registration(QWidget):
             self.sms_label.setText('Регистрация прошла успешно, ' + self.name)
             self.sms_label.show()
             id = self.id
-            print('авторизация, id получен', id)
+          #  print('авторизация, id получен', self.id)
             con.commit()
             con.close()
             self.voiti_btn.hide()
@@ -664,18 +666,21 @@ figures = pygame.sprite.Group()
 
 desk = []
 figures_desk = []
-print(2)
+#print(2)
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = Registration()
     ex.show()
-
+   # if id != -1:
+      #  ex.hide()
+   # sys.exit(app.exec())
+#print(id)
 
 pygame.init()
 size = width, height = 530, 540
 screen = pygame.display.set_mode((width, height))
 start_screen()
-id = ex.id
+print(id)
 game = Game()
 game.start()
     # поправить пешки (доход до конца), ДОБАВИТЬ ОТКАТ НАЗАД
