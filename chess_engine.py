@@ -549,15 +549,13 @@ def start_screen():
         clock.tick(FPS_start_screen)
 
 
-def statistic_screen(id):
-    #con = sqlite3.connect("DATA/new.db")
-    #cur = con.cursor()
-    #loose, win = (str(cur.execute('''select loose, win
-     #                                from play
-      #                               where person like ?''', (id)).fetchall())[2:-2]).split()
-    #print(loose, win)
-    loose, win = 2, 5
-    intro_text = ["Ваша статистика: ", '', f'Поражений: {loose}', f'Побед: {win}', '', 'Для продолжения нажмите']
+def statistic_screen():
+    con = sqlite3.connect("DATA/new.db")
+    cur = con.cursor()
+    result = str(cur.execute('''select loose, win 
+                                from play
+                                where person like ?''', (ex.id,)).fetchall())[2:-2]
+    intro_text = ["Ваша статистика: ", '', f'Поражений: {result[0]}', f'Побед: {result[-1]}', '', 'Для продолжения нажмите']
 
     fon = pygame.transform.scale(load_image('statistic.jpg'), (530, 540))
     screen.blit(fon, (0, 0))
@@ -624,25 +622,19 @@ class Registration(QWidget):
                             where name like ?
                             and surname like ?''', (self.name, self.surname)).fetchall())[3:-4]
         if result == self.password:
-            check = 'Вход произведен успешно, '
-        else:
-            check = 'Введены неверные данные'
-        if check == "Вход произведен успешно, ":
             self.sms_label.hide()
             con = sqlite3.connect("DATA/new.db")
             cur = con.cursor()
             self.id = str(cur.execute('''select id from first
-                            where name like ? and
-                            surname like ?
-                            and psw like ?''', (self.name, self.surname, self.password)).fetchall())[2:-3]
+                                        where name like ? and
+                                        surname like ?
+                                        and psw like ?''', (self.name, self.surname, self.password)).fetchall())[2:-3]
             self.sms_label.setText("Вход произведен успешно, " + self.name)
             self.sms_label.show()
             self.voiti_btn.hide()
-            id = self.id
-         #   print('авторизация, id получен')
             con.close()
         else:
-            self.sms_label.setText(check)
+            self.sms_label.setText('Введены неверные данные')
 
     def add_id(self):  # функция для регистрации нового пользователя
         if self.password_lineedit.text() != self.double_psw_lineedit.text():
@@ -668,7 +660,6 @@ class Registration(QWidget):
             self.sms_label.setText('Регистрация прошла успешно, ' + self.name)
             self.sms_label.show()
             id = self.id
-          #  print('авторизация, id получен', self.id)
             con.commit()
             con.close()
             self.voiti_btn.hide()
@@ -681,27 +672,24 @@ FPS = 60
 
 FPS_start_screen = 5
 all_sprites = pygame.sprite.Group()
-dragon = AnimatedSprite(load_image("lord-2.png"), 7, 1, 370, 30)
+dragon = AnimatedSprite(load_image("lord-2.png"), 7, 1, 380, 30)
 figures = pygame.sprite.Group()
 
 desk = []
 figures_desk = []
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = Registration()
     ex.show()
-   # if id != -1:
-      #  ex.hide()
-   # sys.exit(app.exec())
-#print(id)
 
 pygame.init()
 size = width, height = 530, 540
 screen = pygame.display.set_mode((width, height))
 start_screen()
-print(id)
+
 game = Game()
 game.start()
     # поправить пешки (доход до конца), ДОБАВИТЬ ОТКАТ НАЗАД
 
-statistic_screen(id)
+statistic_screen()
