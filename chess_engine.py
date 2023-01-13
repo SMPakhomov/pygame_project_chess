@@ -7,6 +7,8 @@ from PyQt5 import uic
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton
 from PyQt5.QtWidgets import QMainWindow, QLabel, QLineEdit, QLCDNumber, QCheckBox, QInputDialog, QFileDialog
 
+color = ''
+
 
 class Game:
     def __init__(self, tp=1, time=10 ):
@@ -247,7 +249,7 @@ class Figure(pygame.sprite.Sprite):
         self.abs_moves = []
 
     def load_image(self, name):
-        fullname = os.path.join('DATA', name)
+        fullname = os.path.join('DATA', name + color)
         if not os.path.isfile(fullname):
             print(f"Файл с изображением '{fullname}' не найден")
             sys.exit()
@@ -530,19 +532,15 @@ def start_screen():
         screen.blit(string_rendered, intro_rect)
 
     while True:
-        # fname = '83652d558ceb7da2d098f64503e12d3a.png'
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
             elif event.type == pygame.KEYDOWN or \
                     event.type == pygame.MOUSEBUTTONDOWN:
                 return
-            # elif event.type == pygame.k_r:
-            # change_color(fname, red=True)
-            # elif event.type == pygame.k_g:
-            #   change_color(fname, green=True)
-            # elif event.type == pygame.k_b:
-            # change_color(fname, blue=True)
+            elif event.type == pygame.K_r:
+                color = '-red'
         all_sprites.draw(screen)
         all_sprites.update()
         pygame.display.flip()
@@ -581,8 +579,6 @@ def statistic_screen():
                 pass
         pygame.display.flip()
         clock.tick(FPS_start_screen)
-
-
 
 
 class Registration(QWidget):
