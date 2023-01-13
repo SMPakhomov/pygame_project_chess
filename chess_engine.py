@@ -532,7 +532,6 @@ def start_screen():
         screen.blit(string_rendered, intro_rect)
 
     while True:
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -547,13 +546,54 @@ def start_screen():
         clock.tick(FPS_start_screen)
 
 
+def rating(id):
+    con = sqlite3.connect("new.db")
+    cur = con.cursor()
+    result = str(cur.execute('''select loose, win 
+                            from play''').fetchall())[2:-2]
+    result = result.split("), (")
+    tabel = []
+    for i in range(len(result)):
+        tabel.append(int(result[i][-1]) - int(result[i][0]))
+    tabel = sorted(tabel, reverse=True)
+    result_person = str(cur.execute('''select loose, win 
+                            from play
+                            where person like ?''', (id,)).fetchall())[2:-2]
+    loose, win = result_person[0], result_person[-1]
+    numer = tabel.index(int(win) - int(loose))
+    return numer + 1
+
+
+def rating(id):
+    con = sqlite3.connect("DATA/new.db")
+    cur = con.cursor()
+    result = str(cur.execute('''select loose, win 
+                                from play''').fetchall())[2:-2]
+    print(result)
+    result = result.split("), (")
+    tabel = []
+    print(result)
+    for i in range(len(result)):
+        print(result[i])
+        tabel.append(int(result[i][-1]) - int(result[i][0]))
+    tabel = sorted(tabel, reverse=True)
+    print(tabel)
+    result_person = str(cur.execute('''select loose, win 
+                            from play
+                            where person like ?''', (id,)).fetchall())[2:-2]
+    print(result_person)
+    numer = tabel.index(int(result_person[-1]) - int(result_person[0]))
+    return numer + 1
+
+
 def statistic_screen():
+    index = rating(ex.id)
     con = sqlite3.connect("DATA/new.db")
     cur = con.cursor()
     result = str(cur.execute('''select loose, win 
                                 from play
                                 where person like ?''', (ex.id,)).fetchall())[2:-2]
-    intro_text = ["Ваша статистика: ", '', f'Поражений: {result[0]}', f'Побед: {result[-1]}', '', 'Для продолжения нажмите']
+    intro_text = ["Ваша статистика: ", '', f'Поражений: {result[0]}', f'Побед: {result[-1]}', '', f'Место в рейтинге: {index}']
 
     fon = pygame.transform.scale(load_image('statistic.jpg'), (530, 540))
     screen.blit(fon, (0, 0))
@@ -659,8 +699,6 @@ class Registration(QWidget):
             con.commit()
             con.close()
             self.voiti_btn.hide()
-
-
 
 
 clock = pygame.time.Clock()
