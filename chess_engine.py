@@ -1,8 +1,12 @@
 import pygame
 import os
 import sys
-#from registration import Registration, id
 from PyQt5.QtWidgets import QApplication
+import sqlite3
+from PyQt5 import uic
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton
+from PyQt5.QtWidgets import QMainWindow, QLabel, QLineEdit, QLCDNumber, QCheckBox, QInputDialog, QFileDialog
+
 
 class Game:
     def __init__(self, tp=1, time=10 ):
@@ -480,12 +484,33 @@ def load_image(name, color_key=None):
     except pygame.error as message:
         print('Не удаётся загрузить:', name)
         raise SystemExit(message)
-    image = image.convert_alpha()
+  #  image = image.convert_alpha()
     if color_key is not None:
         if color_key is -1:
             color_key = image.get_at((0, 0))
         image.set_colorkey(color_key)
     return image
+
+
+class AnimatedSprite(pygame.sprite.Sprite):
+    def __init__(self, sheet, columns, rows, x, y):
+        super().__init__(all_sprites)
+        self.frames = []
+        self.cut_sheet(sheet, columns, rows)
+        self.cur_frame = 0
+        self.image = self.frames[self.cur_frame]
+        self.rect = self.rect.move(x, y)
+
+    def cut_sheet(self, sheet, columns, rows):
+        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns, sheet.get_height() // rows)
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                self.frames.append(sheet.subsurface(pygame.Rect(frame_location, self.rect.size)))
+
+    def update(self):
+        self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+        self.image = self.frames[self.cur_frame]
 
 
 def start_screen():
@@ -559,12 +584,7 @@ def statistic_screen(id):
         pygame.display.flip()
         clock.tick(FPS_start_screen)
 
-import sqlite3
-from PyQt5 import uic
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton
-from PyQt5.QtWidgets import QMainWindow, QLabel, QLineEdit, QLCDNumber, QCheckBox, QInputDialog, QFileDialog
 
-id = -1
 
 
 class Registration(QWidget):
@@ -661,12 +681,11 @@ FPS = 60
 
 FPS_start_screen = 5
 all_sprites = pygame.sprite.Group()
-
+dragon = AnimatedSprite(load_image("lord-2.png"), 7, 1, 370, 30)
 figures = pygame.sprite.Group()
 
 desk = []
 figures_desk = []
-#print(2)
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = Registration()
