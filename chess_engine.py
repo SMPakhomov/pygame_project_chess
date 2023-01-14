@@ -1,6 +1,12 @@
 import pygame
 import os
 import sys
+from PyQt5.QtWidgets import QApplication
+import sqlite3
+from PyQt5 import uic
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton
+from PyQt5.QtWidgets import QMainWindow, QLabel, QLineEdit, QLCDNumber, QCheckBox, QInputDialog, QFileDialog
+
 
 
 def load_image(name, color_key=None):
@@ -23,7 +29,10 @@ class Game:
         self.tp = tp  # вариация игры: 1 - против локального игрока, 2 - против ИИ
 
     def start(self):
-        self.desk = Desk(self.time)
+        if ex.color:
+            self.desk = Desk(self.time, ((153, 204, 255), (153, 51, 204)))
+        else:
+            self.desk = Desk(self.time)
         self.run()
 
     def run(self):
@@ -50,6 +59,7 @@ class Game:
                     pos = np
             t = clock.tick(FPS) / 100000
             self.update(is_grabbed, grabbed, t)
+            # self.pawn_on_last_point(figures_desk[1][0])
 
     def check_mat(self):
         for i in (0, 1):
@@ -95,6 +105,10 @@ class Game:
         figures.draw(screen)
         self.time_check()
         self.check_mat()
+        # for elem in self.desk.kings[1:]:
+        #     for p in elem.op_moves:
+        #         pygame.draw.circle(screen, "red",
+        #                            (p[0] * 62.5 + 51.5, p[1] * 62.5 + 51.5), 15, 5)
         pygame.display.flip()
 
     def time_check(self):
@@ -107,6 +121,8 @@ class Game:
             self.end_table(b)
 
     def end_table(self, pl):
+        con = sqlite3.connect("DATA/new.db")
+        cur = con.cursor()
         font = pygame.font.Font(None, 50)
         text = font.render(f"Player {pl} win!", 1, (100, 255, 100))
         text_x = width // 2 - text.get_width() // 2
@@ -115,6 +131,20 @@ class Game:
         pygame.draw.rect(screen, (30, 30, 30), pygame.Rect(text_x - 20, text_y - 10, 250, 55), 3)
         screen.blit(text, (text_x, text_y))
         self.is_game_running = False
+        if pl == 2 and ex.agree:
+            result = cur.execute('''update play set loose = 
+                                                        (select loose from play
+                                                        where person like ?) + 1
+                                                        where person like ?''', (ex.id, ex.id)).fetchall()
+        elif pl == 1 and ex.agree:
+            result = str(cur.execute('''update play set win = 
+                                                        (select win from play
+                                                        where person like ?) + 1
+                                                        where person like ?''', (ex.id, ex.id)).fetchall())
+        ex.agree = False
+        con.commit()
+        con.close()
+
 
     def mousebuttondown(self, event, is_grabbed):
         pos = event.pos
@@ -157,12 +187,14 @@ class Game:
             figures_desk[grabbed[1]][grabbed[0]].rect.x = grabbed[0] * 62.5 + 20.25
             figures_desk[grabbed[1]][grabbed[0]].rect.y = grabbed[1] * 62.5 + 20.25
         else:
+            # if figures_desk[pnt[1]][pnt[0]] is not None:
+            #     figures_desk[pnt[1]][pnt[0]].kill()
             figures_desk[grabbed[1]][grabbed[0]].pos = pnt[::-1]
             tmp = figures_desk[pnt[1]][pnt[0]]
             figures_desk[grabbed[1]][grabbed[0]], figures_desk[pnt[1]][pnt[0]] = None, \
                                                                                  figures_desk[grabbed[1]][grabbed[0]]
             b = [self.desk.kings[0].is_under_attack(), self.desk.kings[1].is_under_attack()]
-            if b[self.desk.turn]:
+            if b[self.desk.turn]:  # !проверить на ошибку
                 figures_desk[grabbed[1]][grabbed[0]], figures_desk[pnt[1]][pnt[0]] = figures_desk[pnt[1]][pnt[0]], \
                                                                                      tmp
                 figures_desk[grabbed[1]][grabbed[0]].pos = (grabbed[1], grabbed[0])
@@ -549,17 +581,252 @@ class King(Figure):
         return res
 
 
-pygame.init()
-size = width, height = 530, 540
-screen = pygame.display.set_mode((width, height))
+def load_image(name, color_key=None):
+    fullname = os.path.join('DATA', name)
+    try:
+        image = pygame.image.load(fullname)
+    except pygame.error as message:
+        print('Не удаётся загрузить:', name)
+        raise SystemExit(message)
+    if color_key is not None:
+        if color_key is -1:
+            color_key = image.get_at((0, 0))
+        image.set_colorkey(color_key)
+    return image   #
+
+
+class AnimatedSprite(pygame.sprite.Sprite):  # класс для создания анимаций
+    def __init__(self, sheet, columns, rows, x, y):
+        super().__init__(all_sprites)
+        self.frames = []
+        self.cut_sheet(sheet, columns, rows)
+        self.cur_frame = 0
+        self.image = self.frames[self.cur_frame]
+        self.rect = self.rect.move(x, y)
+
+    def cut_sheet(self, sheet, columns, rows):
+        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns, sheet.get_height() // rows)
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                self.frames.append(sheet.subsurface(pygame.Rect(frame_location, self.rect.size)))
+
+    def update(self):
+        self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+        self.image = self.frames[self.cur_frame]
+
+
+class InformationForm(QWidget):  # информационная форма
+    def __init__(self):
+        super().__init__()
+        uic.loadUi('DATA/infornation_form.ui', self)
+        self.setWindowTitle('Навигация')
+
+
+class StartScreen():  # стартовое окно
+    def __init__(self):
+        information = InformationForm()
+        information.show()
+        intro_text = ["Шахматы - настоящая стратегия"]
+        self.color = False
+        fon = pygame.transform.scale(load_image('start.jpg'), (530, 540))
+        screen.blit(fon, (0, 0))
+        font = pygame.font.Font(None, 30)
+        text_coord = 30
+        for line in intro_text:
+            string_rendered = font.render(line, 1, pygame.Color('black'))
+            intro_rect = string_rendered.get_rect()
+            text_coord += 10
+            intro_rect.top = text_coord
+            intro_rect.x = 10
+            text_coord += intro_rect.height
+            screen.blit(string_rendered, intro_rect)
+
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                elif event.type == pygame.KEYDOWN or \
+                        event.type == pygame.MOUSEBUTTONDOWN:
+                    return
+            all_sprites.draw(screen)
+            all_sprites.update()
+            pygame.display.flip()
+            clock.tick(FPS_start_screen)
+
+
+def rating(id):  # функция для составлений рейтинга игрока, возвращает позицию игрока
+    con = sqlite3.connect("DATA/new.db")
+    cur = con.cursor()
+    result = str(cur.execute('''select loose, win 
+                                from play''').fetchall())[2:-2]
+    result = result.split("), (")
+    tabel = []
+    for i in range(len(result)):
+        tabel.append(int(result[i][-1]) - int(result[i][0]))
+    tabel = sorted(tabel, reverse=True)
+    result_person = str(cur.execute('''select loose, win 
+                            from play
+                            where person like ?''', (id,)).fetchall())[2:-2]
+    numer = tabel.index(int(result_person[-1]) - int(result_person[0]))
+    return numer + 1
+
+
+class StatisticScreen():  # финальное окно с просмотром статистики
+    def __init__(self):
+        index = rating(ex.id)
+        con = sqlite3.connect("DATA/new.db")
+        cur = con.cursor()
+        result = str(cur.execute('''select loose, win 
+                                        from play
+                                        where person like ?''', (ex.id,)).fetchall())[2:-2]
+        intro_text = ["Ваша статистика: ", '', f'Поражений: {result[0]}', f'Побед: {result[-1]}', '',
+                      f'Место в рейтинге: {index}']
+
+        fon = pygame.transform.scale(load_image('statistic.jpg'), (530, 540))
+        screen.blit(fon, (0, 0))
+        font = pygame.font.Font(None, 30)
+        text_coord = 20
+        for line in intro_text:
+            string_rendered = font.render(line, 1, pygame.Color('black'))
+            intro_rect = string_rendered.get_rect()
+            text_coord += 10
+            intro_rect.top = text_coord
+            intro_rect.x = 10
+            text_coord += intro_rect.height
+            screen.blit(string_rendered, intro_rect)
+
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                elif event.type == pygame.KEYDOWN or \
+                        event.type == pygame.MOUSEBUTTONDOWN:
+                    pass
+            pygame.display.flip()
+            clock.tick(FPS_start_screen)
+
+
+class Registration(QWidget):  # форма для регистрации
+    def __init__(self):
+        self.color = False
+        super().__init__()
+        uic.loadUi('DATA/registration.ui', self)
+        self.setGeometry(200, 300, 541, 300)
+        self.sms_label.hide()
+
+        self.double_psw_lineedit.hide()
+        self.label_8.hide()
+        self.II_btn.hide()
+        self.II_btn.clicked.connect(self.ii_play)
+        self.ii = 1
+        self.vhod_btn.hide()
+        self.agree = True
+        self.registration_btn.hide()
+        self.change_color_btn.hide()
+        self.voiti_btn.setText(" ")
+        self.setWindowTitle('Авторизация')
+        type_of_registration, ok_pressed = QInputDialog.getItem(
+            self, "Выберите тип входа", "",
+            ("Вход", "Регистрация"), 1, False)
+        if ok_pressed:
+            if type_of_registration == "Вход":
+                self.voiti_btn.setText("Войти")
+                self.double_psw_lineedit.hide()
+                self.label_8.hide()
+                self.voiti_btn.clicked.connect(self.get_id)
+            else:
+                self.double_psw_lineedit.show()
+                self.label_8.show()
+                self.voiti_btn.setText("Зарегистрироваться")
+                self.voiti_btn.clicked.connect(self.add_id)
+
+    def get_id(self):  # функция для входа в уже существующий аккаунт. для получения id пользователя из дб
+        self.name = self.name_lineedit.text()
+        self.password = self.password_lineedit.text()
+        self.surname = self.surname_lineedit.text()
+        con = sqlite3.connect("DATA/new.db")
+        cur = con.cursor()
+        result = str(cur.execute('''select psw from first
+                            where name like ?
+                            and surname like ?''', (self.name, self.surname)).fetchall())[3:-4]
+        if result == self.password:
+            self.sms_label.hide()
+            con = sqlite3.connect("DATA/new.db")
+            cur = con.cursor()
+            self.id = str(cur.execute('''select id from first
+                                        where name like ? and
+                                        surname like ?
+                                        and psw like ?''', (self.name, self.surname, self.password)).fetchall())[2:-3]
+            self.sms_label.setText("Вход произведен успешно, " + self.name)
+            self.sms_label.show()
+            self.voiti_btn.hide()
+            self.change_color_btn.clicked.connect(self.change_color)
+            self.change_color_btn.show()
+            # self.II_btn.show()
+            con.close()
+        else:
+            self.sms_label.setText('Введены неверные данные')
+
+    def add_id(self):  # функция для регистрации нового пользователя
+        if self.password_lineedit.text() != self.double_psw_lineedit.text():
+            self.double_psw_lineedit.setText("Пароли не совпадают")
+        else:
+            self.password = self.password_lineedit.text()
+
+            self.name = self.name_lineedit.text()
+            self.surname = self.surname_lineedit.text()
+            con = sqlite3.connect("DATA/new.db")
+            cur = con.cursor()
+            cur.execute('''insert into first(name, surname, psw)
+                               values (?, ?, ?)''', (self.name, self.surname, self.password))
+
+            self.id = str(cur.execute('''select id from first
+                                        where surname like ? and name like ? and psw like ?''',
+                                      (self.surname, self.name, self.password)).fetchall())[2:-3]
+
+            cur.execute('''insert into play(person, loose, win)
+                               values (?,
+                               '0', '0')''', (self.id,))
+
+            self.sms_label.setText('Регистрация прошла успешно, ' + self.name)
+            self.change_color_btn.clicked.connect(self.change_color)
+            self.change_color_btn.show()
+            self.sms_label.show()
+            con.commit()
+            con.close()
+            self.voiti_btn.hide()
+            # self.II_btn.show()
+
+    def change_color(self):  # функция смены цвета игрового поля
+        self.color = True
+
+    def ii_play(self):
+        self.ii = 2
+
 
 clock = pygame.time.Clock()
 FPS = 60
 
+FPS_start_screen = 5
+all_sprites = pygame.sprite.Group()
+dragon = AnimatedSprite(load_image("lord-2.png"), 7, 1, 380, 30)
 figures = pygame.sprite.Group()
 
 desk = []
 figures_desk = []
 
-game = Game()
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    ex = Registration()
+    ex.show()
+
+pygame.init()
+size = width, height = 530, 540
+screen = pygame.display.set_mode((width, height))
+start_screen = StartScreen()
+
+game = Game(ex.ii)
 game.start()
+
+statistic = StatisticScreen()
