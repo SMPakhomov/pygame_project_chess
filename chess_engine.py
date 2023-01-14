@@ -509,10 +509,10 @@ def load_image(name, color_key=None):
         if color_key is -1:
             color_key = image.get_at((0, 0))
         image.set_colorkey(color_key)
-    return image
+    return image   #
 
 
-class AnimatedSprite(pygame.sprite.Sprite):
+class AnimatedSprite(pygame.sprite.Sprite):  # класс для создания анимаций
     def __init__(self, sheet, columns, rows, x, y):
         super().__init__(all_sprites)
         self.frames = []
@@ -532,17 +532,18 @@ class AnimatedSprite(pygame.sprite.Sprite):
         self.cur_frame = (self.cur_frame + 1) % len(self.frames)
         self.image = self.frames[self.cur_frame]
 
-class InformationForm(QWidget):
+
+class InformationForm(QWidget):  # информационная форма
     def __init__(self):
         super().__init__()
         uic.loadUi('DATA/infornation_form.ui', self)
 
 
-class StartScreen():
+class StartScreen():  # стартовое окно
     def __init__(self):
         information = InformationForm()
         information.show()
-        intro_text = ["Шахматы - настоящая стратегия", 'Нажмите r для смены цвета поля']
+        intro_text = ["Шахматы - настоящая стратегия"]
         self.color = False
         fon = pygame.transform.scale(load_image('start.jpg'), (530, 540))
         screen.blit(fon, (0, 0))
@@ -561,9 +562,6 @@ class StartScreen():
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
-               # elif event.type == pygame.K_r:
-                #    self.color = True
-                 #   print('try chenge color')
                 elif event.type == pygame.KEYDOWN or \
                         event.type == pygame.MOUSEBUTTONDOWN:
                     return
@@ -573,7 +571,7 @@ class StartScreen():
             clock.tick(FPS_start_screen)
 
 
-def rating(id):
+def rating(id):  # функция для составлений рейтинга игрока, возвращает позицию игрока
     con = sqlite3.connect("DATA/new.db")
     cur = con.cursor()
     result = str(cur.execute('''select loose, win 
@@ -590,7 +588,7 @@ def rating(id):
     return numer + 1
 
 
-class StatisticScreen():
+class StatisticScreen():  # финальное окно с просмотром статистики
     def __init__(self):
         index = rating(ex.id)
         con = sqlite3.connect("DATA/new.db")
@@ -625,12 +623,8 @@ class StatisticScreen():
             clock.tick(FPS_start_screen)
 
 
-
-
-
-class Registration(QWidget):
+class Registration(QWidget):  # форма для регистрации
     def __init__(self):
-        global id
         self.color = False
         super().__init__()
         uic.loadUi('DATA/registration.ui', self)
@@ -709,12 +703,11 @@ class Registration(QWidget):
             self.change_color_btn.clicked.connect(self.change_color)
             self.change_color_btn.show()
             self.sms_label.show()
-            id = self.id
             con.commit()
             con.close()
             self.voiti_btn.hide()
 
-    def change_color(self):
+    def change_color(self):  # функция смены цвета игрового поля
         self.color = True
 
 
@@ -743,6 +736,6 @@ game = Game()
 game.start()
 
 
-    # поправить пешки (доход до конца), ДОБАВИТЬ ОТКАТ НАЗАД
+# поправить пешки (доход до конца), ДОБАВИТЬ ОТКАТ НАЗАД
 
 statistic = StatisticScreen()
