@@ -2,6 +2,9 @@
 <ui version="4.0">
  <class>Form</class>
  <widget class="QWidget" name="Form">
+  <property name="enabled">
+   <bool>true</bool>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -177,6 +180,19 @@
    </property>
    <property name="text">
     <string>Смена цвета</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="II_btn">
+   <property name="geometry">
+    <rect>
+     <x>360</x>
+     <y>270</y>
+     <width>75</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Против ИИ</string>
    </property>
   </widget>
  </widget>

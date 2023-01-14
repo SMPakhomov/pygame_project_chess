@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QMainWindow, QLabel, QLineEdit, QLCDNumber, QCheckBo
 
 
 class Game:
-    def __init__(self, tp=1, time=10):
+    def __init__(self, tp=1, time=0.10):
         self.time = time  # время выделенное под игрока (игрок1, игрок2)
         self.tp = tp  # вариация игры: 1 - против локального игрока, 2 - против ИИ
 
@@ -537,6 +537,7 @@ class InformationForm(QWidget):  # информационная форма
     def __init__(self):
         super().__init__()
         uic.loadUi('DATA/infornation_form.ui', self)
+        self.setWindowTitle('Навигация')
 
 
 class StartScreen():  # стартовое окно
@@ -628,9 +629,14 @@ class Registration(QWidget):  # форма для регистрации
         self.color = False
         super().__init__()
         uic.loadUi('DATA/registration.ui', self)
+        self.setGeometry(200, 300, 541, 300)
         self.sms_label.hide()
+
         self.double_psw_lineedit.hide()
         self.label_8.hide()
+        self.II_btn.hide()
+        self.II_btn.clicked.connect(self.ii_play)
+        self.ii = 1
         self.vhod_btn.hide()
         self.agree = True
         self.registration_btn.hide()
@@ -674,6 +680,7 @@ class Registration(QWidget):  # форма для регистрации
             self.voiti_btn.hide()
             self.change_color_btn.clicked.connect(self.change_color)
             self.change_color_btn.show()
+            # self.II_btn.show()
             con.close()
         else:
             self.sms_label.setText('Введены неверные данные')
@@ -706,9 +713,13 @@ class Registration(QWidget):  # форма для регистрации
             con.commit()
             con.close()
             self.voiti_btn.hide()
+            # self.II_btn.show()
 
     def change_color(self):  # функция смены цвета игрового поля
         self.color = True
+
+    def ii_play(self):
+        self.ii = 2
 
 
 clock = pygame.time.Clock()
@@ -732,7 +743,7 @@ size = width, height = 530, 540
 screen = pygame.display.set_mode((width, height))
 start_screen = StartScreen()
 
-game = Game()
+game = Game(ex.ii)
 game.start()
 
 
