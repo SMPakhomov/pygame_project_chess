@@ -152,6 +152,15 @@ class Game:
         ex.agree = False
         con.commit()
         con.close()
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                elif event.type == pygame.KEYDOWN or \
+                        event.type == pygame.MOUSEBUTTONDOWN:
+                    statistic = StatisticScreen()
+            pygame.display.flip()
+            clock.tick(FPS_start_screen)
 
 
     def mousebuttondown(self, event, is_grabbed):
@@ -702,7 +711,8 @@ class StatisticScreen():  # финальное окно с просмотром 
                     pygame.quit()
                 elif event.type == pygame.KEYDOWN or \
                         event.type == pygame.MOUSEBUTTONDOWN:
-                    pass
+                    game = Game()
+                    game.start()
             pygame.display.flip()
             clock.tick(FPS_start_screen)
 
@@ -802,49 +812,32 @@ class Registration(QWidget):  # форма для регистрации
             self.double_psw_lineedit.setText("Пароли не совпадают")
         else:
             self.password = self.password_lineedit.text()
-            print(1)
             self.name = self.name_lineedit.text()
             self.surname = self.surname_lineedit.text()
             con = sqlite3.connect("DATA/new.db")
             cur = con.cursor()
             cur.execute('''insert into first(name, surname, psw)
                                values (?, ?, ?)''', (self.name, self.surname, self.password))
-            print(2)
             self.id[self.part - 1] = str(cur.execute('''select id from first
                                         where surname like ? and name like ? and psw like ?''',
                                                      (self.surname, self.name, self.password)).fetchall())[2:-3]
             self.names[self.part - 1] = self.name
-            print(3)
             cur.execute('''insert into play(person, loose, win)
                                values (?,
                                '0', '0')''', (self.id[self.part - 1],))
-            print(4)
             if self.part == 2:
-                print(6)
                 self.sms_label.setText('Регистрация прошла успешно, ' + self.name)
-                print(7)
                 self.change_color_btn.clicked.connect(self.change_color)
-                print(8)
                 self.change_color_btn.show()
-                print(9)
                 self.sms_label.show()
-                print(10)
                 self.id_1 = self.id[0]
-                print(11)
                 self.id_2 = self.id[1]
-                print(12)
                 self.name_1 = self.names[0]
-                print(13)
                 self.name_2 = self.names[1]
-                print(14)
                 con.commit()
-                print(15)
                 con.close()
-                print()
                 self.voiti_btn.hide()
-               # self.start_play_btn.show()
-                # self.authorize = True
-                print(5)
+
             else:
                 self.name_lineedit.clear()
                 self.password_lineedit.clear()
@@ -871,7 +864,7 @@ class Registration(QWidget):  # форма для регистрации
         self.color = True
 
     def start_play(self):
-        pass# self.ii = 2
+        pass
 
 
 
