@@ -7,11 +7,10 @@ from PyQt5 import uic
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton
 from PyQt5.QtWidgets import QMainWindow, QLabel, QLineEdit, QLCDNumber, QCheckBox, QInputDialog, QFileDialog
 
-color = ''
 
 
 class Game:
-    def __init__(self, tp=1, time=10 ):
+    def __init__(self, tp=1, time=0.05):
         self.time = time  # время выделенное под игрока (игрок1, игрок2)
         self.tp = tp  # вариация игры: 1 - против локального игрока, 2 - против ИИ
 
@@ -94,12 +93,17 @@ class Game:
         b = 0
         if self.desk.time[0] < 0:
             b = 2
+
         elif self.desk.time[1] < 0:
             b = 1
+
         if b:
             self.end_table(b)
 
+
     def end_table(self, pl):
+        con = sqlite3.connect("DATA/new.db")
+        cur = con.cursor()
         font = pygame.font.Font(None, 50)
         text = font.render(f"Player {pl} win!", 1, (100, 255, 100))
         text_x = width // 2 - text.get_width() // 2
@@ -108,6 +112,20 @@ class Game:
         pygame.draw.rect(screen, (30, 30, 30), pygame.Rect(text_x - 20, text_y - 10, 250, 55), 3)
         screen.blit(text, (text_x, text_y))
         self.is_game_running = False
+        if pl == 2 and ex.agree:
+            result = cur.execute('''update play set loose = 
+                                                        (select loose from play
+                                                        where person like ?) + 1
+                                                        where person like ?''', (ex.id, ex.id)).fetchall()
+        elif pl == 1 and ex.agree:
+            result = str(cur.execute('''update play set win = 
+                                                        (select win from play
+                                                        where person like ?) + 1
+                                                        where person like ?''', (ex.id, ex.id)).fetchall())
+        ex.agree = False
+        con.commit()
+        con.close()
+
 
     def mousebuttondown(self, event, is_grabbed):
         pos = event.pos
@@ -547,24 +565,6 @@ def start_screen():
 
 
 def rating(id):
-    con = sqlite3.connect("new.db")
-    cur = con.cursor()
-    result = str(cur.execute('''select loose, win 
-                            from play''').fetchall())[2:-2]
-    result = result.split("), (")
-    tabel = []
-    for i in range(len(result)):
-        tabel.append(int(result[i][-1]) - int(result[i][0]))
-    tabel = sorted(tabel, reverse=True)
-    result_person = str(cur.execute('''select loose, win 
-                            from play
-                            where person like ?''', (id,)).fetchall())[2:-2]
-    loose, win = result_person[0], result_person[-1]
-    numer = tabel.index(int(win) - int(loose))
-    return numer + 1
-
-
-def rating(id):
     con = sqlite3.connect("DATA/new.db")
     cur = con.cursor()
     result = str(cur.execute('''select loose, win 
@@ -630,6 +630,7 @@ class Registration(QWidget):
         self.double_psw_lineedit.hide()
         self.label_8.hide()
         self.vhod_btn.hide()
+        self.agree = True
         self.registration_btn.hide()
         self.voiti_btn.setText(" ")
         self.setWindowTitle('Авторизация')
