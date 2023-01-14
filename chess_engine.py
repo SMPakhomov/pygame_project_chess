@@ -2,6 +2,7 @@ import pygame
 import os
 import sys
 
+
 def load_image(name, color_key=None):
     fullname = os.path.join('DATA', name)
     try:
@@ -84,7 +85,10 @@ class Game:
             self.desk.draw_timer(t)
         if is_grabbed:
             figures_desk[grabbed[1]][grabbed[0]].check_possible()
-            for elem in figures_desk[grabbed[1]][grabbed[0]].possible_move:
+            psmv = figures_desk[grabbed[1]][grabbed[0]].possible_move
+            if figures_desk[grabbed[1]][grabbed[0]].type[1] == 'K':
+                psmv += figures_desk[grabbed[1]][grabbed[0]].castling()
+            for elem in psmv:
                 pygame.draw.circle(screen, (0, 255, 0, 100),
                                    (elem[0] * 62.5 + 51.5, elem[1] * 62.5 + 51.5), 15, 5)
         figures.update()
@@ -129,9 +133,27 @@ class Game:
         if not is_grabbed:
             return
         pnt = (int((event.pos[0] - 10) / 62.5), int((event.pos[1] - 10) / 62.5))
-        print(figures_desk[grabbed[1]][grabbed[0]])
         figures_desk[grabbed[1]][grabbed[0]].check_possible()
-        if pnt not in figures_desk[grabbed[1]][grabbed[0]].possible_move:
+        if figures_desk[grabbed[1]][grabbed[0]].type[1] == 'K' and \
+                pnt in figures_desk[grabbed[1]][grabbed[0]].castling():
+            d = 1
+            rook = (pnt[1], 0)
+            if pnt[0] == 6:
+                d = -1
+                rook = (pnt[1], 7)
+            figures_desk[grabbed[1]][grabbed[0]].pos = pnt[::-1]
+            figures_desk[grabbed[1]][grabbed[0]].first = False
+            figures_desk[grabbed[1]][grabbed[0]], figures_desk[pnt[1]][pnt[0]] = None,\
+                                                                                 figures_desk[grabbed[1]][grabbed[0]]
+            figures_desk[pnt[1]][pnt[0]].rect.x = pnt[0] * 62.5 + 20.25
+            figures_desk[rook[0]][rook[1]].pos = (pnt[1], pnt[0] + d)
+            figures_desk[rook[0]][rook[1]], figures_desk[pnt[1]][pnt[0] + d] = \
+                None, figures_desk[rook[0]][rook[1]]
+            figures_desk[pnt[1]][pnt[0] + d].rect.x = (pnt[0] + d) * 62.5 + 20.25
+
+            self.desk.turn += 1
+            self.desk.turn %= 2
+        elif pnt not in figures_desk[grabbed[1]][grabbed[0]].possible_move:
             figures_desk[grabbed[1]][grabbed[0]].rect.x = grabbed[0] * 62.5 + 20.25
             figures_desk[grabbed[1]][grabbed[0]].rect.y = grabbed[1] * 62.5 + 20.25
         else:
@@ -155,9 +177,9 @@ class Game:
                 self.desk.turn += 1
                 self.desk.turn %= 2
                 self.is_under_attacks = [self.desk.kings[0].is_under_attack(), self.desk.kings[1].is_under_attack()]
-                if figures_desk[pnt[1]][pnt[0]].type[1] == "P":
+                if figures_desk[pnt[1]][pnt[0]].type[1] in ["P", "K", "R"]:
                     figures_desk[pnt[1]][pnt[0]].first = False
-                    if pnt[1] == 0 or pnt[1] == 7:
+                    if (pnt[1] == 0 or pnt[1] == 7) and figures_desk[pnt[1]][pnt[0]].type[1] == "P":
                         self.pawn_on_last_point(figures_desk[pnt[1]][pnt[0]])
 
     def pawn_on_last_point(self, pawn):
@@ -359,6 +381,7 @@ class Horse(Figure):
 class Rook(Figure):
     def __init__(self, *args):
         super().__init__(*args)
+        self.first = True
 
     def check_possible(self):
         self.possible_move.clear()
@@ -477,6 +500,7 @@ class King(Figure):
     def __init__(self, *args):
         super().__init__(*args)
         self.op_moves = []
+        self.first = True
 
     def is_under_attack(self):
         tp = self.type[0]
@@ -501,8 +525,29 @@ class King(Figure):
                 if 0 <= y < 8 and 0 <= x < 8:
                     self.abs_moves.append((x, y))
                     if (x, y) not in self.op_moves and (figures_desk[y][x] is None or
-                                                           figures_desk[y][x].type[0] != self.type[0]):
+                                                        figures_desk[y][x].type[0] != self.type[0]):
                         self.possible_move.append((x, y))
+
+    def castling(self):
+        y = 7 if self.type[0] == 'W' else 0
+        res = []
+        flag = True
+        if self.first:
+            if isinstance(figures_desk[y][0], Rook) and figures_desk[y][0].first:
+                for i in range(1, self.pos[1]):
+                    if figures_desk[y][i] is not None or (i, y) in self.op_moves:
+                        flag = False
+                if flag and (self.pos[1], y) not in self.op_moves:
+                    res.append((2, y))
+            flag = True
+            if isinstance(figures_desk[y][-1], Rook) and figures_desk[y][-1].first:
+                for i in range(self.pos[1] + 1, 7):
+                    if figures_desk[y][i] is not None or (i, y) in self.op_moves:
+                        flag = False
+                if flag and (self.pos[1], y) not in self.op_moves:
+                    res.append((6, y))
+        return res
+
 
 pygame.init()
 size = width, height = 530, 540
@@ -518,4 +563,4 @@ figures_desk = []
 
 game = Game()
 game.start()
-# поправить пешки шаг на два через фигцру, ДОБАВИТЬ ОТКАТ НАЗАД, ракировка
+# ДОБАВИТЬ ОТКАТ НАЗАД, рокировка, сделать figuremove
