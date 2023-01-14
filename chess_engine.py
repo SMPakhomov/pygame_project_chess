@@ -532,9 +532,16 @@ class AnimatedSprite(pygame.sprite.Sprite):
         self.cur_frame = (self.cur_frame + 1) % len(self.frames)
         self.image = self.frames[self.cur_frame]
 
-
-class start_screen():
+class InformationForm(QWidget):
     def __init__(self):
+        super().__init__()
+        uic.loadUi('DATA/infornation_form.ui', self)
+
+
+class StartScreen():
+    def __init__(self):
+        information = InformationForm()
+        information.show()
         intro_text = ["Шахматы - настоящая стратегия", 'Нажмите r для смены цвета поля']
         self.color = False
         fon = pygame.transform.scale(load_image('start.jpg'), (530, 540))
@@ -583,7 +590,7 @@ def rating(id):
     return numer + 1
 
 
-class statistic_screen():
+class StatisticScreen():
     def __init__(self):
         index = rating(ex.id)
         con = sqlite3.connect("DATA/new.db")
@@ -616,6 +623,9 @@ class statistic_screen():
                     pass
             pygame.display.flip()
             clock.tick(FPS_start_screen)
+
+
+
 
 
 class Registration(QWidget):
@@ -707,6 +717,7 @@ class Registration(QWidget):
     def change_color(self):
         self.color = True
 
+
 clock = pygame.time.Clock()
 FPS = 60
 
@@ -726,10 +737,12 @@ if __name__ == '__main__':
 pygame.init()
 size = width, height = 530, 540
 screen = pygame.display.set_mode((width, height))
-start_screen = start_screen()
+start_screen = StartScreen()
 
 game = Game()
 game.start()
+
+
     # поправить пешки (доход до конца), ДОБАВИТЬ ОТКАТ НАЗАД
 
-statistic = statistic_screen()
+statistic = StatisticScreen()
