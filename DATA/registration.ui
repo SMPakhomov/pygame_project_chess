@@ -166,6 +166,19 @@
     <string>Вход завершен, </string>
    </property>
   </widget>
+  <widget class="QPushButton" name="change_color_btn">
+   <property name="geometry">
+    <rect>
+     <x>440</x>
+     <y>270</y>
+     <width>75</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Смена цвета</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>

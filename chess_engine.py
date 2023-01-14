@@ -10,12 +10,15 @@ from PyQt5.QtWidgets import QMainWindow, QLabel, QLineEdit, QLCDNumber, QCheckBo
 
 
 class Game:
-    def __init__(self, tp=1, time=0.05):
+    def __init__(self, tp=1, time=10):
         self.time = time  # время выделенное под игрока (игрок1, игрок2)
         self.tp = tp  # вариация игры: 1 - против локального игрока, 2 - против ИИ
 
     def start(self):
-        self.desk = Desk(self.time)
+        if ex.color:
+            self.desk = Desk(self.time, ((153, 204, 255), (153, 51, 204)))
+        else:
+            self.desk = Desk(self.time)
         self.run()
 
     def run(self):
@@ -93,10 +96,8 @@ class Game:
         b = 0
         if self.desk.time[0] < 0:
             b = 2
-
         elif self.desk.time[1] < 0:
             b = 1
-
         if b:
             self.end_table(b)
 
@@ -267,7 +268,7 @@ class Figure(pygame.sprite.Sprite):
         self.abs_moves = []
 
     def load_image(self, name):
-        fullname = os.path.join('DATA', name + color)
+        fullname = os.path.join('DATA', name)
         if not os.path.isfile(fullname):
             print(f"Файл с изображением '{fullname}' не найден")
             sys.exit()
@@ -504,7 +505,6 @@ def load_image(name, color_key=None):
     except pygame.error as message:
         print('Не удаётся загрузить:', name)
         raise SystemExit(message)
-  #  image = image.convert_alpha()
     if color_key is not None:
         if color_key is -1:
             color_key = image.get_at((0, 0))
@@ -533,35 +533,37 @@ class AnimatedSprite(pygame.sprite.Sprite):
         self.image = self.frames[self.cur_frame]
 
 
-def start_screen():
-    intro_text = ["Шахматы - настоящая стратегия", 'Нажмите r, g или b для смены цвета']
+class start_screen():
+    def __init__(self):
+        intro_text = ["Шахматы - настоящая стратегия", 'Нажмите r для смены цвета поля']
+        self.color = False
+        fon = pygame.transform.scale(load_image('start.jpg'), (530, 540))
+        screen.blit(fon, (0, 0))
+        font = pygame.font.Font(None, 30)
+        text_coord = 30
+        for line in intro_text:
+            string_rendered = font.render(line, 1, pygame.Color('black'))
+            intro_rect = string_rendered.get_rect()
+            text_coord += 10
+            intro_rect.top = text_coord
+            intro_rect.x = 10
+            text_coord += intro_rect.height
+            screen.blit(string_rendered, intro_rect)
 
-    fon = pygame.transform.scale(load_image('start.jpg'), (530, 540))
-    screen.blit(fon, (0, 0))
-    font = pygame.font.Font(None, 30)
-    text_coord = 30
-    for line in intro_text:
-        string_rendered = font.render(line, 1, pygame.Color('black'))
-        intro_rect = string_rendered.get_rect()
-        text_coord += 10
-        intro_rect.top = text_coord
-        intro_rect.x = 10
-        text_coord += intro_rect.height
-        screen.blit(string_rendered, intro_rect)
-
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-            elif event.type == pygame.KEYDOWN or \
-                    event.type == pygame.MOUSEBUTTONDOWN:
-                return
-            elif event.type == pygame.K_r:
-                color = '-red'
-        all_sprites.draw(screen)
-        all_sprites.update()
-        pygame.display.flip()
-        clock.tick(FPS_start_screen)
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+               # elif event.type == pygame.K_r:
+                #    self.color = True
+                 #   print('try chenge color')
+                elif event.type == pygame.KEYDOWN or \
+                        event.type == pygame.MOUSEBUTTONDOWN:
+                    return
+            all_sprites.draw(screen)
+            all_sprites.update()
+            pygame.display.flip()
+            clock.tick(FPS_start_screen)
 
 
 def rating(id):
@@ -569,61 +571,57 @@ def rating(id):
     cur = con.cursor()
     result = str(cur.execute('''select loose, win 
                                 from play''').fetchall())[2:-2]
-    print(result)
     result = result.split("), (")
     tabel = []
-    print(result)
     for i in range(len(result)):
-        print(result[i])
         tabel.append(int(result[i][-1]) - int(result[i][0]))
     tabel = sorted(tabel, reverse=True)
-    print(tabel)
     result_person = str(cur.execute('''select loose, win 
                             from play
                             where person like ?''', (id,)).fetchall())[2:-2]
-    print(result_person)
     numer = tabel.index(int(result_person[-1]) - int(result_person[0]))
     return numer + 1
 
 
-def statistic_screen():
-    index = rating(ex.id)
-    con = sqlite3.connect("DATA/new.db")
-    cur = con.cursor()
-    result = str(cur.execute('''select loose, win 
-                                from play
-                                where person like ?''', (ex.id,)).fetchall())[2:-2]
-    intro_text = ["Ваша статистика: ", '', f'Поражений: {result[0]}', f'Побед: {result[-1]}', '', f'Место в рейтинге: {index}']
+class statistic_screen():
+    def __init__(self):
+        index = rating(ex.id)
+        con = sqlite3.connect("DATA/new.db")
+        cur = con.cursor()
+        result = str(cur.execute('''select loose, win 
+                                        from play
+                                        where person like ?''', (ex.id,)).fetchall())[2:-2]
+        intro_text = ["Ваша статистика: ", '', f'Поражений: {result[0]}', f'Побед: {result[-1]}', '',
+                      f'Место в рейтинге: {index}']
 
-    fon = pygame.transform.scale(load_image('statistic.jpg'), (530, 540))
-    screen.blit(fon, (0, 0))
-    font = pygame.font.Font(None, 30)
-    text_coord = 20
-    for line in intro_text:
-        string_rendered = font.render(line, 1, pygame.Color('black'))
-        intro_rect = string_rendered.get_rect()
-        text_coord += 10
-        intro_rect.top = text_coord
-        intro_rect.x = 10
-        text_coord += intro_rect.height
-        screen.blit(string_rendered, intro_rect)
+        fon = pygame.transform.scale(load_image('statistic.jpg'), (530, 540))
+        screen.blit(fon, (0, 0))
+        font = pygame.font.Font(None, 30)
+        text_coord = 20
+        for line in intro_text:
+            string_rendered = font.render(line, 1, pygame.Color('black'))
+            intro_rect = string_rendered.get_rect()
+            text_coord += 10
+            intro_rect.top = text_coord
+            intro_rect.x = 10
+            text_coord += intro_rect.height
+            screen.blit(string_rendered, intro_rect)
 
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-            elif event.type == pygame.KEYDOWN or \
-                    event.type == pygame.MOUSEBUTTONDOWN:
-                # game = Game()
-                # game.start()
-                pass
-        pygame.display.flip()
-        clock.tick(FPS_start_screen)
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                elif event.type == pygame.KEYDOWN or \
+                        event.type == pygame.MOUSEBUTTONDOWN:
+                    pass
+            pygame.display.flip()
+            clock.tick(FPS_start_screen)
 
 
 class Registration(QWidget):
     def __init__(self):
         global id
+        self.color = False
         super().__init__()
         uic.loadUi('DATA/registration.ui', self)
         self.sms_label.hide()
@@ -632,6 +630,7 @@ class Registration(QWidget):
         self.vhod_btn.hide()
         self.agree = True
         self.registration_btn.hide()
+        self.change_color_btn.hide()
         self.voiti_btn.setText(" ")
         self.setWindowTitle('Авторизация')
         type_of_registration, ok_pressed = QInputDialog.getItem(
@@ -669,6 +668,8 @@ class Registration(QWidget):
             self.sms_label.setText("Вход произведен успешно, " + self.name)
             self.sms_label.show()
             self.voiti_btn.hide()
+            self.change_color_btn.clicked.connect(self.change_color)
+            self.change_color_btn.show()
             con.close()
         else:
             self.sms_label.setText('Введены неверные данные')
@@ -695,12 +696,16 @@ class Registration(QWidget):
                                '0', '0')''', (self.id,))
 
             self.sms_label.setText('Регистрация прошла успешно, ' + self.name)
+            self.change_color_btn.clicked.connect(self.change_color)
+            self.change_color_btn.show()
             self.sms_label.show()
             id = self.id
             con.commit()
             con.close()
             self.voiti_btn.hide()
 
+    def change_color(self):
+        self.color = True
 
 clock = pygame.time.Clock()
 FPS = 60
@@ -721,10 +726,10 @@ if __name__ == '__main__':
 pygame.init()
 size = width, height = 530, 540
 screen = pygame.display.set_mode((width, height))
-start_screen()
+start_screen = start_screen()
 
 game = Game()
 game.start()
     # поправить пешки (доход до конца), ДОБАВИТЬ ОТКАТ НАЗАД
 
-statistic_screen()
+statistic = statistic_screen()
