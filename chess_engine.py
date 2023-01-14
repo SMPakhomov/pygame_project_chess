@@ -122,7 +122,6 @@ class Game:
                     figures_desk[grabbed[1]][grabbed[0]].type[0] == "W" and self.desk.turn != 0:
                 return is_grabbed, grabbed, pos
             figures_desk[grabbed[1]][grabbed[0]].check_possible()
-            print(figures_desk[grabbed[1]][grabbed[0]].possible_move)
             is_grabbed = True
         return is_grabbed, grabbed, pos
 
@@ -130,6 +129,7 @@ class Game:
         if not is_grabbed:
             return
         pnt = (int((event.pos[0] - 10) / 62.5), int((event.pos[1] - 10) / 62.5))
+        print(figures_desk[grabbed[1]][grabbed[0]])
         figures_desk[grabbed[1]][grabbed[0]].check_possible()
         if pnt not in figures_desk[grabbed[1]][grabbed[0]].possible_move:
             figures_desk[grabbed[1]][grabbed[0]].rect.x = grabbed[0] * 62.5 + 20.25
@@ -158,7 +158,7 @@ class Game:
                 if figures_desk[pnt[1]][pnt[0]].type[1] == "P":
                     figures_desk[pnt[1]][pnt[0]].first = False
                     if pnt[1] == 0 or pnt[1] == 7:
-                        self.pawn_on_last_point(figures_desk[1][1])
+                        self.pawn_on_last_point(figures_desk[pnt[1]][pnt[0]])
 
     def pawn_on_last_point(self, pawn):
         t = pawn.type[0]
@@ -190,8 +190,10 @@ class Game:
                         c -= 1
                     elif accept_bt[0][0] <= pos[0] <= accept_bt[1][0] and accept_bt[0][1] <= pos[1] <= accept_bt[1][1]:
                         chose = t + v[c]
-                        is_choosed = True
                         ps = pawn.pos
+                        figures_desk[ps[0]][ps[1]].kill()
+                        is_choosed = True
+                        fg = None
                         if c == 0:
                             fg = Queen(ps, chose)
                         if c == 1:
@@ -200,8 +202,7 @@ class Game:
                             fg = Rook(ps, chose)
                         if c == 3:
                             fg = Horse(ps, chose)
-                        figures_desk[ps[1]][ps[0]] = fg
-                        pawn.kill()
+                        figures_desk[ps[0]][ps[1]] = fg
 
             c %= len(v)
             if c < 0:
@@ -319,12 +320,12 @@ class Pawn(Figure):
             if figures_desk[self.pos[0] + dl][self.pos[1]] is None:
                 self.possible_move.append((self.pos[1], self.pos[0] + dl))
             if self.pos[1] - 1 >= 0:
-                self.abs_moves.append(figures_desk[self.pos[0] + dl][self.pos[1] - 1])
+                self.abs_moves.append((self.pos[1] - 1, self.pos[0] + dl))
                 if (not (figures_desk[self.pos[0] + dl][self.pos[1] - 1] is None) and
                         figures_desk[self.pos[0] + dl][self.pos[1] - 1].type[0] != tp):
                     self.possible_move.append((self.pos[1] - 1, self.pos[0] + dl))
             if self.pos[1] + 1 < 8:
-                self.abs_moves.append(figures_desk[self.pos[0] + dl][self.pos[1] + 1])
+                self.abs_moves.append((self.pos[1] + 1, self.pos[0] + dl))
                 if (not (figures_desk[self.pos[0] + dl][self.pos[1] + 1] is None) and
                         figures_desk[self.pos[0] + dl][self.pos[1] + 1].type[0] != tp):
                     self.possible_move.append((self.pos[1] + 1, self.pos[0] + dl))
@@ -516,4 +517,4 @@ figures_desk = []
 
 game = Game()
 game.start()
-# поправить пешки (доход до конца), ДОБАВИТЬ ОТКАТ НАЗАД, ракировка
+# поправить пешки шаг на два через фигцру, ДОБАВИТЬ ОТКАТ НАЗАД, ракировка
