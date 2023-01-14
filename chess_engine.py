@@ -2,9 +2,23 @@ import pygame
 import os
 import sys
 
+def load_image(name, color_key=None):
+    fullname = os.path.join('DATA', name)
+    try:
+        image = pygame.image.load(fullname)
+    except pygame.error as message:
+        print('Не удаётся загрузить:', name)
+        raise SystemExit(message)
+    #  image = image.convert_alpha()
+    if color_key is not None:
+        if color_key is -1:
+            color_key = image.get_at((0, 0))
+        image.set_colorkey(color_key)
+    return image
+
 
 class Game:
-    def __init__(self, tp=1, time=10 ):
+    def __init__(self, tp=1, time=10):
         self.time = time  # время выделенное под игрока (игрок1, игрок2)
         self.tp = tp  # вариация игры: 1 - против локального игрока, 2 - против ИИ
 
@@ -36,7 +50,6 @@ class Game:
                     pos = np
             t = clock.tick(FPS) / 100000
             self.update(is_grabbed, grabbed, t)
-            # self.pawn_on_last_point(figures_desk[1][0])
 
     def check_mat(self):
         for i in (0, 1):
@@ -48,10 +61,10 @@ class Game:
                         self.end_table(1)
 
     def check_possible_solve_mat(self, nm):
-        tp = "W" if nm == 0 else "B"
+        tp = "W" if nm == 0 else "D"
         for i in range(8):
             for j in range(8):
-                if figures_desk[i][j] is not None and figures_desk[i][j].type == tp:
+                if not (figures_desk[i][j] is None) and figures_desk[i][j].type[0] == tp:
                     elem = figures_desk[i][j]
                     elem.check_possible()
                     for move in figures_desk[i][j].possible_move:
@@ -59,9 +72,9 @@ class Game:
                         tmp = figures_desk[move[1]][move[0]]
                         figures_desk[i][j], figures_desk[move[1]][move[0]] = None, elem
                         b = [self.desk.kings[0].is_under_attack(), self.desk.kings[1].is_under_attack()]
+                        figures_desk[i][j], figures_desk[move[1]][move[0]] = elem, tmp
+                        figures_desk[i][j].pos = (i, j)
                         if not b[nm]:
-                            figures_desk[i][j], figures_desk[move[1]][move[0]] = elem, tmp
-                            figures_desk[i][j].pos = (j, i)
                             return True
         return False
 
@@ -70,6 +83,7 @@ class Game:
         if self.is_game_running:
             self.desk.draw_timer(t)
         if is_grabbed:
+            figures_desk[grabbed[1]][grabbed[0]].check_possible()
             for elem in figures_desk[grabbed[1]][grabbed[0]].possible_move:
                 pygame.draw.circle(screen, (0, 255, 0, 100),
                                    (elem[0] * 62.5 + 51.5, elem[1] * 62.5 + 51.5), 15, 5)
@@ -77,10 +91,6 @@ class Game:
         figures.draw(screen)
         self.time_check()
         self.check_mat()
-        # for elem in self.desk.kings[1:]:
-        #     for p in elem.op_moves:
-        #         pygame.draw.circle(screen, "red",
-        #                            (p[0] * 62.5 + 51.5, p[1] * 62.5 + 51.5), 15, 5)
         pygame.display.flip()
 
     def time_check(self):
@@ -112,6 +122,7 @@ class Game:
                     figures_desk[grabbed[1]][grabbed[0]].type[0] == "W" and self.desk.turn != 0:
                 return is_grabbed, grabbed, pos
             figures_desk[grabbed[1]][grabbed[0]].check_possible()
+            print(figures_desk[grabbed[1]][grabbed[0]].possible_move)
             is_grabbed = True
         return is_grabbed, grabbed, pos
 
@@ -119,18 +130,17 @@ class Game:
         if not is_grabbed:
             return
         pnt = (int((event.pos[0] - 10) / 62.5), int((event.pos[1] - 10) / 62.5))
+        figures_desk[grabbed[1]][grabbed[0]].check_possible()
         if pnt not in figures_desk[grabbed[1]][grabbed[0]].possible_move:
             figures_desk[grabbed[1]][grabbed[0]].rect.x = grabbed[0] * 62.5 + 20.25
             figures_desk[grabbed[1]][grabbed[0]].rect.y = grabbed[1] * 62.5 + 20.25
         else:
-            # if figures_desk[pnt[1]][pnt[0]] is not None:
-            #     figures_desk[pnt[1]][pnt[0]].kill()
             figures_desk[grabbed[1]][grabbed[0]].pos = pnt[::-1]
             tmp = figures_desk[pnt[1]][pnt[0]]
             figures_desk[grabbed[1]][grabbed[0]], figures_desk[pnt[1]][pnt[0]] = None, \
                                                                                  figures_desk[grabbed[1]][grabbed[0]]
             b = [self.desk.kings[0].is_under_attack(), self.desk.kings[1].is_under_attack()]
-            if b[self.desk.turn]:  # !проверить на ошибку
+            if b[self.desk.turn]:
                 figures_desk[grabbed[1]][grabbed[0]], figures_desk[pnt[1]][pnt[0]] = figures_desk[pnt[1]][pnt[0]], \
                                                                                      tmp
                 figures_desk[grabbed[1]][grabbed[0]].pos = (grabbed[1], grabbed[0])
@@ -147,21 +157,63 @@ class Game:
                 self.is_under_attacks = [self.desk.kings[0].is_under_attack(), self.desk.kings[1].is_under_attack()]
                 if figures_desk[pnt[1]][pnt[0]].type[1] == "P":
                     figures_desk[pnt[1]][pnt[0]].first = False
+                    if pnt[1] == 0 or pnt[1] == 7:
+                        self.pawn_on_last_point(figures_desk[1][1])
 
-    # def pawn_on_last_point(self, pawn):
-    #     is_choosed = False
-    #     pygame.draw.rect(screen, (250, 188, 90, 98), pygame.Rect(100, 80, 330, 55))
-    #     pygame.draw.rect(screen, "black", pygame.Rect(100, 80, 330, 55), 3)
-    #     font = pygame.font.Font(None, 25)
-    #     text = font.render(f"Выберите фигуру на замену пешке", 1, (250, 250, 250))
-    #     text_x = width // 2 - text.get_width() // 2
-    #     text_y = height // 5 - text.get_height() // 2
-    #     screen.blit(text, (text_x, text_y))
-    #     pygame.display.flip()
-    #     v = []
-    #     while not is_choosed:
-    #         if input() == 'q':
-    #             exit()
+    def pawn_on_last_point(self, pawn):
+        t = pawn.type[0]
+        is_choosed = False
+        pygame.draw.rect(screen, (250, 188, 90, 98), pygame.Rect(100, 80, 330, 55))
+        pygame.draw.rect(screen, "black", pygame.Rect(100, 80, 330, 55), 3)
+        font = pygame.font.Font(None, 25)
+        text = font.render(f"Выберите фигуру на замену пешке", 1, (250, 250, 250))
+        text_x = width // 2 - text.get_width() // 2
+        text_y = height // 5 - text.get_height() // 2
+        screen.blit(text, (text_x, text_y))
+        v = ['Q', 'B', 'R', 'H']
+        c = 0
+        arrow_r = [(width // 4 * 3, height // 8 * 5), (width // 4 * 3, height // 8 * 3), (width // 10 * 9, height // 2)]
+        arrow_l = [(width // 4, height // 8 * 5), (width // 4, height // 8 * 3), (width // 10, height // 2)]
+        pygame.draw.polygon(screen, 'red', arrow_r, 0)
+        pygame.draw.polygon(screen, 'red', arrow_l, 0)
+        pygame.draw.rect(screen, (250, 188, 90, 98), pygame.Rect((width // 4 + 30, height // 8 * 3 + 30),
+                                                                 (width // 4 * 2 - 60, height // 8 * 2 - 60)), 0)
+        accept_bt = [(width // 4 + 70, height // 8 * 4 + 50),
+                     (width // 4 + 70 + width // 4 * 2 - 140, height // 8 * 4 + 50 + height // 8 * 2 - 100)]
+        while not is_choosed:
+            for event in pygame.event.get():
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    pos = event.pos
+                    if arrow_r[0][0] <= pos[0] <= arrow_r[-1][0] and arrow_r[1][1] <= pos[1] <= arrow_r[0][1]:
+                        c += 1
+                    elif arrow_l[0][0] >= pos[0] >= arrow_l[-1][0] and arrow_l[1][1] <= pos[1] <= arrow_l[0][1]:
+                        c -= 1
+                    elif accept_bt[0][0] <= pos[0] <= accept_bt[1][0] and accept_bt[0][1] <= pos[1] <= accept_bt[1][1]:
+                        chose = t + v[c]
+                        is_choosed = True
+                        ps = pawn.pos
+                        if c == 0:
+                            fg = Queen(ps, chose)
+                        if c == 1:
+                            fg = Bishop(ps, chose)
+                        if c == 2:
+                            fg = Rook(ps, chose)
+                        if c == 3:
+                            fg = Horse(ps, chose)
+                        figures_desk[ps[1]][ps[0]] = fg
+                        pawn.kill()
+
+            c %= len(v)
+            if c < 0:
+                c = len(v) - 1
+            pygame.draw.rect(screen, (250, 188, 90, 98), pygame.Rect((width // 4 + 30, height // 8 * 3 + 30),
+                                                                     (width // 4 * 2 - 60, height // 8 * 2 - 60)), 0)
+            pygame.draw.rect(screen, 'green', pygame.Rect((width // 4 + 70, height // 8 * 4 + 50),
+                                                          (width // 4 * 2 - 140, height // 8 * 2 - 100)), 0)
+            text = font.render(f"Выбрать", 1, (250, 250, 250))
+            screen.blit(text, (width // 4 + 100, height // 8 * 4 + 60))
+            screen.blit(load_image(f'{t}{v[c]}.png'), (width // 2 - 32, height // 2 - 32))
+            pygame.display.flip()
 
 
 class Desk:
@@ -431,27 +483,6 @@ class King(Figure):
             for elem in row:
                 if not (elem is None) and elem.type[0] != tp:
                     elem.check_possible()
-                    # if elem.type[1] == "P":
-                    #     tmp = []
-                    #     y, x = elem.pos
-                    #     d = -1
-                    #     if elem.type[0] == "D":
-                    #         d = 1
-                    #     if 8 > y + d >= 0:
-                    #         if x - 1 >= 0:
-                    #             tmp.append((x - 1, y + d))
-                    #         if x + 1 < 8:
-                    #             tmp.append((x + 1, y + d))
-                    #     self.op_moves += tmp
-                    # elif elem.type[1] == "K":
-                    #     tmp = []
-                    #     y, x = elem.pos
-                    #     for i in (-1, 1, 0):
-                    #         for j in (-1, 1, 0):
-                    #             if 0 <= y + i < 8 and 0 <= x + j < 8:
-                    #                 tmp.append((x + j, y + i))
-                    #     self.op_moves += tmp
-                    # else:
                     self.op_moves += elem.abs_moves
         if self.pos[::-1] in self.op_moves:
             return True
@@ -463,14 +494,13 @@ class King(Figure):
         self.abs_moves.clear()
         for i in (-1, 0, 1):
             for j in (-1, 0, 1):
-                tmp = (pos[0] + i, pos[1] + j)
-                if 0 <= tmp[0] < 8 and 0 <= tmp[1] < 8:
-                    self.abs_moves.append((tmp[::-1]))
-                    if tmp[::-1] not in self.op_moves and (
-                            figures_desk[tmp[0]][tmp[1]] is None or
-                            figures_desk[tmp[0]][tmp[1]].type[0] != self.type[0]):
-                        self.possible_move.append(tmp[::-1])
-
+                y = pos[0] + i
+                x = pos[1] + j
+                if 0 <= y < 8 and 0 <= x < 8:
+                    self.abs_moves.append((x, y))
+                    if (x, y) not in self.op_moves and (figures_desk[y][x] is None or
+                                                           figures_desk[y][x].type[0] != self.type[0]):
+                        self.possible_move.append((x, y))
 
 pygame.init()
 size = width, height = 530, 540
@@ -486,4 +516,4 @@ figures_desk = []
 
 game = Game()
 game.start()
-# поправить пешки (доход до конца), ДОБАВИТЬ ОТКАТ НАЗАД
+# поправить пешки (доход до конца), ДОБАВИТЬ ОТКАТ НАЗАД, ракировка
