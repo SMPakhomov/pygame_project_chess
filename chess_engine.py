@@ -68,14 +68,15 @@ class Game:
                 if not (figures_desk[i][j] is None) and figures_desk[i][j].type[0] == tp:
                     elem = figures_desk[i][j]
                     elem.check_possible()
-                    for move in figures_desk[i][j].possible_move:
-                        figures_desk[i][j].pos = move[::-1]
+                    for move in elem.possible_move:
+                        elem.pos = move[::-1]
                         tmp = figures_desk[move[1]][move[0]]
                         figures_desk[i][j], figures_desk[move[1]][move[0]] = None, elem
                         b = [self.desk.kings[0].is_under_attack(), self.desk.kings[1].is_under_attack()]
                         figures_desk[i][j], figures_desk[move[1]][move[0]] = elem, tmp
-                        figures_desk[i][j].pos = (i, j)
+                        figures_desk[i][j].pos = i, j
                         if not b[nm]:
+                            print(figures_desk[i][j].type, move)
                             return True
         return False
 
@@ -143,7 +144,7 @@ class Game:
                 rook = (pnt[1], 7)
             figures_desk[grabbed[1]][grabbed[0]].pos = pnt[::-1]
             figures_desk[grabbed[1]][grabbed[0]].first = False
-            figures_desk[grabbed[1]][grabbed[0]], figures_desk[pnt[1]][pnt[0]] = None,\
+            figures_desk[grabbed[1]][grabbed[0]], figures_desk[pnt[1]][pnt[0]] = None, \
                                                                                  figures_desk[grabbed[1]][grabbed[0]]
             figures_desk[pnt[1]][pnt[0]].rect.x = pnt[0] * 62.5 + 20.25
             figures_desk[rook[0]][rook[1]].pos = (pnt[1], pnt[0] + d)
