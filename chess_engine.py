@@ -329,7 +329,8 @@ class Pawn(Figure):
                 if (not (figures_desk[self.pos[0] + dl][self.pos[1] + 1] is None) and
                         figures_desk[self.pos[0] + dl][self.pos[1] + 1].type[0] != tp):
                     self.possible_move.append((self.pos[1] + 1, self.pos[0] + dl))
-        if self.first and 0 <= self.pos[0] + dl * 2 < 8 and figures_desk[self.pos[0] + dl * 2][self.pos[1]] is None:
+        if self.first and figures_desk[self.pos[0] + dl * 2][self.pos[1]] is None and \
+                figures_desk[self.pos[0] + dl][self.pos[1]] is None:
             self.possible_move.append((self.pos[1], self.pos[0] + dl * 2))
 
 
