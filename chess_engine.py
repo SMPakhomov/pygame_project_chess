@@ -157,7 +157,6 @@ class Game:
                                     where person like ?) + 1
                                     where person like ?''', (ex.id_2, ex.id_2)).fetchall()
             ex.agree = False
-        ex.agree = False
         con.commit()
         con.close()
         while True:
@@ -676,7 +675,6 @@ def rating(id):  # функция для составлений рейтинга
         loose = int(result[i][result[i].find(',') + 2])
         win = int(result[i][:result[i].find(',')])
         tabel.append(loose - win)
-        tabel.append(int(result[i][-1]) - int(result[i][0]))
     tabel = sorted(tabel, reverse=True)
     result_person = str(cur.execute('''select loose, win 
                             from play
@@ -684,7 +682,6 @@ def rating(id):  # функция для составлений рейтинга
     loose = result_person[result_person.find(',') + 2:]
     win = result_person[:result_person.find(',')]
     numer = tabel.index(int(loose) - int(win))
-    numer = tabel.index(int(result_person[-1]) - int(result_person[0]))
     return numer + 1
 
 
