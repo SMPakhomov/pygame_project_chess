@@ -89,6 +89,7 @@ class Game:
                         b = [self.desk.kings[0].is_under_attack(), self.desk.kings[1].is_under_attack()]
                         figures_desk[i][j], figures_desk[move[1]][move[0]] = elem, tmp
                         figures_desk[i][j].pos = i, j
+                        elem.check_possible()
                         if not b[nm]:
                             print(figures_desk[i][j].type, move)
                             return True
@@ -145,6 +146,7 @@ class Game:
                                         (select win from play
                                         where person like ?) + 1
                                         where person like ?''', (ex.id_2, ex.id_2)).fetchall())
+            ex.agree = False
         elif pl == 1 and ex.agree:
             result = str(cur.execute('''update play set win = 
                                                         (select win from play
@@ -154,6 +156,7 @@ class Game:
                                     (select loose from play
                                     where person like ?) + 1
                                     where person like ?''', (ex.id_2, ex.id_2)).fetchall()
+            ex.agree = False
         ex.agree = False
         con.commit()
         con.close()
@@ -670,11 +673,17 @@ def rating(id):  # функция для составлений рейтинга
     result = result.split("), (")
     tabel = []
     for i in range(len(result)):
+        loose = int(result[i][result[i].find(',') + 2])
+        win = int(result[i][:result[i].find(',')])
+        tabel.append(loose - win)
         tabel.append(int(result[i][-1]) - int(result[i][0]))
     tabel = sorted(tabel, reverse=True)
     result_person = str(cur.execute('''select loose, win 
                             from play
                             where person like ?''', (id,)).fetchall())[2:-2]
+    loose = result_person[result_person.find(',') + 2:]
+    win = result_person[:result_person.find(',')]
+    numer = tabel.index(int(loose) - int(win))
     numer = tabel.index(int(result_person[-1]) - int(result_person[0]))
     return numer + 1
 
@@ -715,6 +724,7 @@ class StatisticScreen():  # окно просмотра статистики
                     sys.exit()
                 elif event.type == pygame.KEYDOWN or \
                         event.type == pygame.MOUSEBUTTONDOWN:
+
                     game = Game()  # при нажатии на экран начинается игра
                     ex.agree = True  # снова становится возможна запись о победе/проигрыше
                     game.start()
