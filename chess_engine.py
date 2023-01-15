@@ -24,7 +24,7 @@ def load_image(name, color_key=None):
 
 
 class Game:
-    def __init__(self, tp=1, time=0.10):
+    def __init__(self, tp=1, time=10):
         self.time = time  # время выделенное под игрока (игрок1, игрок2)
         self.tp = tp  # вариация игры: 1 - против локального игрока, 2 - против ИИ
 
@@ -729,6 +729,8 @@ class Registration(QWidget):  # форма для регистрации
         uic.loadUi('DATA/registration.ui', self)
         self.setGeometry(200, 300, 541, 300)
         self.sms_label.hide()
+        self.person_position_btn.hide()
+        self.person_position_btn.clicked.connect(self.personal_position)
         self.authorize = False
         self.double_psw_lineedit.hide()
         self.double_psw_lineedit.setPlaceholderText('Введите пароль повторно')
@@ -791,6 +793,7 @@ class Registration(QWidget):  # форма для регистрации
                 self.name_2 = self.names[1]
                 self.change_position_btn.show()
                 self.change_position_btn.clicked.connect(self.change_position)
+                self.person_position_btn.show()
                 con.close()
             else:
                 self.name_lineedit.clear()
@@ -847,6 +850,7 @@ class Registration(QWidget):  # форма для регистрации
                 self.voiti_btn.hide()
                 self.change_position_btn.show()
                 self.change_position_btn.clicked.connect(self.change_position)
+                self.person_position_btn.show()
 
             else:
                 self.name_lineedit.clear()
@@ -877,6 +881,9 @@ class Registration(QWidget):  # форма для регистрации
         n = random.randint(1, 3)
         self.table = ('def_desk-' + str(n) + '.txt')
         print(self.table)
+
+    def personal_position(self):
+        self.table = 'def_desk_person.txt'
 
 
 

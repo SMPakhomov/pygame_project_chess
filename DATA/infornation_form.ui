@@ -68,12 +68,17 @@
    </item>
    <item>
     <property name="text">
-     <string>После надписи об успешной авторизации можете начинать игру</string>
+     <string>Если вы хотите настроить свою расстановку, то отредактируйте файл &quot;def_desk_person&quot;</string>
     </property>
    </item>
    <item>
     <property name="text">
-     <string>В конце игры, для просмотра статистики, необходимо закрыть окно</string>
+     <string>и нажмите на кнопку &quot;Пользовательская расстановка&quot;</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>После надписи об успешной авторизации можете начинать игру</string>
     </property>
    </item>
    <item>
