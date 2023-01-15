@@ -47,7 +47,8 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-                    statistic = StatisticScreen()
+                    statistic = StatisticScreen()  # при попытке выхода в процессе игры открывается окно статистики
+                    # именно оно будет играть роль финального окна для пользователя
                 if event.type == pygame.MOUSEBUTTONDOWN and self.is_game_running:
                     is_grabbed, grabbed, pos = self.mousebuttondown(event, is_grabbed)
                 if event.type == pygame.MOUSEBUTTONUP and self.is_game_running:
@@ -599,6 +600,7 @@ class King(Figure):
                     res.append((6, y))
         return res
 
+
 class AnimatedSprite(pygame.sprite.Sprite):  # класс для создания анимаций
     def __init__(self, sheet, columns, rows, x, y):
         super().__init__(all_sprites)
@@ -629,14 +631,12 @@ class InformationForm(QWidget):  # информационная форма
 
 class StartScreen():  # стартовое окно
     def __init__(self):
-        information = InformationForm()
+        information = InformationForm()  # вызов информационного окна
         information.show()
         font = pygame.font.Font(None, 30)
         intro_text = ["Шахматы - настоящая стратегия"]
-        self.color = False
         fon = pygame.transform.scale(load_image('start.jpg'), (530, 540))
         screen.blit(fon, (0, 0))
-
         text_coord = 30
         for line in intro_text:
             string_rendered = font.render(line, 1, pygame.Color('black'))
@@ -653,9 +653,7 @@ class StartScreen():  # стартовое окно
                     pygame.quit()
                 elif event.type == pygame.KEYDOWN or \
                         event.type == pygame.MOUSEBUTTONDOWN:
-                    #return
-                    print('i on start')
-                    game = Game()
+                    game = Game()  # при нажатии на окно начинается игра
                     game.start()
             all_sprites.draw(screen)
             all_sprites.update()
@@ -680,23 +678,23 @@ def rating(id):  # функция для составлений рейтинга
     return numer + 1
 
 
-class StatisticScreen():  # финальное окно с просмотром статистики
+class StatisticScreen():  # окно просмотра статистики
+    # при желании пользователя выйти из игры, это окно играет роль финального
     def __init__(self):
-        index_1 = rating(ex.id_1)
-        index_2 = rating(ex.id_2)
+        index_1, index_2 = rating(ex.id_1), rating(ex.id_2)  # поизиции игроков в рейтинге
         con = sqlite3.connect("DATA/new.db")
         cur = con.cursor()
+        # далее из бд берется количество побед и проигршей первого и второго игроков
         result_1 = str(cur.execute('''select loose, win 
-                                        from play
-                                        where person like ?''', (ex.id_1,)).fetchall())[2:-2]
+                                    from play
+                                    where person like ?''', (ex.id_1,)).fetchall())[2:-2]
         result_2 = str(cur.execute('''select loose, win 
-                                                from play
-                                                where person like ?''', (ex.id_2,)).fetchall())[2:-2]
+                                    from play
+                                    where person like ?''', (ex.id_2,)).fetchall())[2:-2]
         intro_text = [f"Ваша статистика, {ex.name_1}: ", f'Поражений: {result_1[0]}', f'Побед: {result_1[-1]}',
                       f'Место в рейтинге: {index_1}', '', f"Ваша статистика, {ex.name_2}: ",
                       f'Поражений: {result_2[0]}', f'Побед: {result_2[-1]}',
                       f'Место в рейтинге: {index_2}']
-
         fon = pygame.transform.scale(load_image('statistic.jpg'), (530, 540))
         screen.blit(fon, (0, 0))
         font = pygame.font.Font(None, 30)
@@ -709,17 +707,17 @@ class StatisticScreen():  # финальное окно с просмотром 
             intro_rect.x = 10
             text_coord += intro_rect.height
             screen.blit(string_rendered, intro_rect)
-
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    pygame.quit()
+                    pygame.quit()  # в этом моменте происходит окончательный выход из игры
                 elif event.type == pygame.KEYDOWN or \
                         event.type == pygame.MOUSEBUTTONDOWN:
-                    game = Game()
+                    game = Game()  # при нажатии на экран начинается игра
+                    ex.agree = True  # снова становится возможна запись о победе/проигрыше
                     game.start()
             pygame.display.flip()
-            clock.tick(FPS_start_screen)
+            clock.tick(FPS)
 
 
 class Registration(QWidget):  # форма для регистрации
@@ -728,41 +726,36 @@ class Registration(QWidget):  # форма для регистрации
         super().__init__()
         uic.loadUi('DATA/registration.ui', self)
         self.setGeometry(200, 300, 541, 300)
-        self.sms_label.hide()
-        self.person_position_btn.hide()
+        self.setWindowTitle('Авторизация')
+        self.sms_label.hide()  # сообщение об успешном входе
+        self.person_position_btn.hide()  # кнопка персональной стартовой расстановки
         self.person_position_btn.clicked.connect(self.personal_position)
-        self.authorize = False
         self.double_psw_lineedit.hide()
         self.double_psw_lineedit.setPlaceholderText('Введите пароль повторно')
-        self.label_8.hide()
-        #self.start_play_btn.hide()
         self.change_position_btn.clicked.connect(self.change_position)
-        self.part = 1
-        self.change_position_btn.hide()
-        self.agree = True
-        self.id = [' ', '']
+        self.change_position_btn.hide()  # кнопка согласия
+        self.change_color_btn.hide()  # кнопка для смены цвета игрового поля
+        self.change_color_btn.clicked.connect(self.change_color)
+        self.part = 1  # указывает на то, какой игрок 1/2 сейчас регистрируется
+        self.agree = True  # возможность записи победы/проиграша
+        # списки id и имен регистрирующихся пользователей
+        self.id = ['', '']
         self.names = ['', '']
-       # self.registration_btn.hide()
-        self.change_color_btn.hide()
-        self.voiti_btn.setText("Продолжить")
-        self.setWindowTitle('Авторизация')
+        self.table = "def_desk.txt"  # файл с базовой расстановкой фигур
         type_of_registration, ok_pressed = QInputDialog.getItem(
             self, "Выберите тип входа", "",
             ("Вход", "Регистрация"), 1, False)
         if ok_pressed:
             if type_of_registration == "Вход":
-             #   self.voiti_btn.setText("Войти")
                 self.double_psw_lineedit.hide()
                 self.label_8.hide()
                 self.voiti_btn.clicked.connect(self.get_id)
             else:
                 self.double_psw_lineedit.show()
-                self.label_8.show()
-              #  self.voiti_btn.setText("Зарегистрироваться")
                 self.voiti_btn.clicked.connect(self.add_id)
+        self.voiti_btn.setText("Продолжить")
 
     def get_id(self):  # функция для входа в уже существующий аккаунт. для получения id пользователя из дб
-        self.table = "def_desk.txt"
         self.name = self.name_lineedit.text()
         self.password = self.password_lineedit.text()
         self.surname = self.surname_lineedit.text()
@@ -772,30 +765,27 @@ class Registration(QWidget):  # форма для регистрации
                             where name like ?
                             and surname like ?''', (self.name, self.surname)).fetchall())[3:-4]
         if result == self.password:
-            self.sms_label.hide()
-
             self.id[self.part - 1] = str(cur.execute('''select id from first
                                         where name like ? and
                                         surname like ?
                                         and psw like ?''', (self.name, self.surname, self.password)).fetchall())[2:-3]
             self.names[self.part - 1] = self.name
-            if self.part == 2:
-                self.sms_label.setText("Вход произведен успешно, " + self.name)
+
+            if self.part == 2:  # если авторизацию прошел второй игрок
+                self.sms_label.setText("Вход произведен успешно")
                 self.sms_label.show()
                 self.voiti_btn.hide()
-                self.change_color_btn.clicked.connect(self.change_color)
                 self.change_color_btn.show()
                 self.change_position_btn.show()
-                self.authorize = True
+                self.change_position_btn.show()
+                self.person_position_btn.show()
+                # далее присваиваются id и имена пользователей
                 self.id_1 = self.id[0]
                 self.id_2 = self.id[1]
                 self.name_1 = self.names[0]
                 self.name_2 = self.names[1]
-                self.change_position_btn.show()
-                self.change_position_btn.clicked.connect(self.change_position)
-                self.person_position_btn.show()
                 con.close()
-            else:
+            else: # иначе процесс повторяется для второго игрока
                 self.name_lineedit.clear()
                 self.password_lineedit.clear()
                 self.surname_lineedit.clear()
@@ -805,16 +795,13 @@ class Registration(QWidget):  # форма для регистрации
                     ("Вход", "Регистрация"), 1, False)
                 if ok_pressed:
                     if type_of_registration == "Вход":
-                        #   self.voiti_btn.setText("Войти")
                         self.double_psw_lineedit.hide()
                         self.label_8.hide()
                         self.voiti_btn.clicked.connect(self.get_id)
                     else:
                         self.double_psw_lineedit.show()
-                        self.label_8.show()
-                        #  self.voiti_btn.setText("Зарегистрироваться")
                         self.voiti_btn.clicked.connect(self.add_id)
-                self.part = 2
+                self.part = 2  # фиксируем, что далее регистрацию будет проходить второй игрок
         else:
             self.sms_label.setText('Введены неверные данные')
 
@@ -836,23 +823,21 @@ class Registration(QWidget):  # форма для регистрации
             cur.execute('''insert into play(person, loose, win)
                                values (?,
                                '0', '0')''', (self.id[self.part - 1],))
-            if self.part == 2:
-                self.sms_label.setText('Регистрация прошла успешно, ' + self.name)
-                self.change_color_btn.clicked.connect(self.change_color)
-                self.change_color_btn.show()
+            if self.part == 2:  # если регистрацию прошел второй игрок
+                self.sms_label.setText('Регистрация прошла успешно')
                 self.sms_label.show()
+                self.change_color_btn.show()
+                self.voiti_btn.hide()
+                self.change_position_btn.show()
+                self.person_position_btn.show()
+                # далее присваиваются id и имена пользователей
                 self.id_1 = self.id[0]
                 self.id_2 = self.id[1]
                 self.name_1 = self.names[0]
                 self.name_2 = self.names[1]
                 con.commit()
                 con.close()
-                self.voiti_btn.hide()
-                self.change_position_btn.show()
-                self.change_position_btn.clicked.connect(self.change_position)
-                self.person_position_btn.show()
-
-            else:
+            else:  # иначе процесс повторяется для второго пользователя
                 self.name_lineedit.clear()
                 self.password_lineedit.clear()
                 self.surname_lineedit.clear()
@@ -863,39 +848,30 @@ class Registration(QWidget):  # форма для регистрации
                     ("Вход", "Регистрация"), 1, False)
                 if ok_pressed:
                     if type_of_registration == "Вход":
-                        #   self.voiti_btn.setText("Войти")
                         self.double_psw_lineedit.hide()
-                        self.label_8.hide()
                         self.voiti_btn.clicked.connect(self.get_id)
                     else:
                         self.double_psw_lineedit.show()
-                        self.label_8.show()
-                        #  self.voiti_btn.setText("Зарегистрироваться")
                         self.voiti_btn.clicked.connect(self.add_id)
                 self.part = 2
 
     def change_color(self):  # функция смены цвета игрового поля
         self.color = True
 
-    def change_position(self):
+    def change_position(self):  # функция, которая случайным образом выберет отличную от базовой расстановку
         n = random.randint(1, 3)
         self.table = ('def_desk-' + str(n) + '.txt')
-        print(self.table)
 
-    def personal_position(self):
+    def personal_position(self):  # функция, которая позволяет начать с пользовательской расстановкой
         self.table = 'def_desk_person.txt'
-
-
-
 
 
 clock = pygame.time.Clock()
 FPS = 60
-
-FPS_start_screen = 5
+FPS_start_screen = 5  # более медленное fps для анимации на стартовом экране
 all_sprites = pygame.sprite.Group()
-dragon = AnimatedSprite(load_image("lord-2.png"), 7, 1, 380, 30)
 figures = pygame.sprite.Group()
+lord = AnimatedSprite(load_image("lord-2.png"), 7, 1, 380, 30)
 pygame.init()
 size = width, height = 530, 540
 desk = []
@@ -905,10 +881,11 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = Registration()
     ex.show()
+
 screen = pygame.display.set_mode((width, height))
 start_screen = StartScreen()
 
 game = Game()
 game.start()
 
-statistic = StatisticScreen()
+pygame.quit()
