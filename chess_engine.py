@@ -26,9 +26,13 @@ def load_image(name, color_key=None):
 class Game:
     def __init__(self, tp=1, time=10):
         self.time = time  # время выделенное под игрока (игрок1, игрок2)
-        self.tp = tp  # вариация игры: 1 - против локального игрока, 2 - против ИИ
+        self.tp = tp  # вариация игры: 1 - против локального игрока
 
     def start(self):
+        figures_desk.clear()
+        desk.clear()
+        for elem in figures:
+            elem.kill()
         if ex.color:
             self.desk = Desk(self.time, ((153, 204, 255), (153, 51, 204)))
         else:
@@ -61,7 +65,6 @@ class Game:
                     pos = np
             t = clock.tick(FPS) / 100000
             self.update(is_grabbed, grabbed, t)
-            # self.pawn_on_last_point(figures_desk[1][0])
 
     def check_mat(self):
         for i in (0, 1):
@@ -163,7 +166,6 @@ class Game:
                     statistic = StatisticScreen()
             pygame.display.flip()
             clock.tick(FPS_start_screen)
-
 
     def mousebuttondown(self, event, is_grabbed):
         pos = event.pos
@@ -294,7 +296,6 @@ class Desk:
     def __init__(self, time, color=((240, 240, 240), (110, 110, 110))):
         global desk, figures_desk
         self.kings = []
-        #with open('def_else_desk.txt', 'r') as file:
         with open(ex.table, 'r') as file:
             desk = [file.readline().split(' ') for _ in range(8)]
         figures_desk = []
@@ -786,7 +787,7 @@ class Registration(QWidget):  # форма для регистрации
                 self.name_1 = self.names[0]
                 self.name_2 = self.names[1]
                 con.close()
-            else: # иначе процесс повторяется для второго игрока
+            else:  # иначе процесс повторяется для второго игрока
                 self.name_lineedit.clear()
                 self.password_lineedit.clear()
                 self.surname_lineedit.clear()
