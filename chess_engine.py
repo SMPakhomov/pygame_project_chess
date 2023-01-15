@@ -6,7 +6,7 @@ import sqlite3
 from PyQt5 import uic
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton
 from PyQt5.QtWidgets import QMainWindow, QLabel, QLineEdit, QLCDNumber, QCheckBox, QInputDialog, QFileDialog
-
+import random
 
 
 def load_image(name, color_key=None):
@@ -24,7 +24,7 @@ def load_image(name, color_key=None):
 
 
 class Game:
-    def __init__(self, tp=1, time=10):
+    def __init__(self, tp=1, time=0.10):
         self.time = time  # время выделенное под игрока (игрок1, игрок2)
         self.tp = tp  # вариация игры: 1 - против локального игрока, 2 - против ИИ
 
@@ -47,6 +47,7 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                    statistic = StatisticScreen()
                 if event.type == pygame.MOUSEBUTTONDOWN and self.is_game_running:
                     is_grabbed, grabbed, pos = self.mousebuttondown(event, is_grabbed)
                 if event.type == pygame.MOUSEBUTTONUP and self.is_game_running:
@@ -292,7 +293,8 @@ class Desk:
     def __init__(self, time, color=((240, 240, 240), (110, 110, 110))):
         global desk, figures_desk
         self.kings = []
-        with open('def_desk.txt', 'r') as file:
+        #with open('def_else_desk.txt', 'r') as file:
+        with open(ex.table, 'r') as file:
             desk = [file.readline().split(' ') for _ in range(8)]
         figures_desk = []
         for i in range(8):
@@ -651,7 +653,10 @@ class StartScreen():  # стартовое окно
                     pygame.quit()
                 elif event.type == pygame.KEYDOWN or \
                         event.type == pygame.MOUSEBUTTONDOWN:
-                    return
+                    #return
+                    print('i on start')
+                    game = Game()
+                    game.start()
             all_sprites.draw(screen)
             all_sprites.update()
             pygame.display.flip()
@@ -728,10 +733,10 @@ class Registration(QWidget):  # форма для регистрации
         self.double_psw_lineedit.hide()
         self.double_psw_lineedit.setPlaceholderText('Введите пароль повторно')
         self.label_8.hide()
-      #  self.start_game_btn.hide()
-       # self.start_game_btn.clicked.connect(self.start_play)
+        #self.start_play_btn.hide()
+        self.change_position_btn.clicked.connect(self.change_position)
         self.part = 1
-      #  self.vhod_btn.hide()
+        self.change_position_btn.hide()
         self.agree = True
         self.id = [' ', '']
         self.names = ['', '']
@@ -755,6 +760,7 @@ class Registration(QWidget):  # форма для регистрации
                 self.voiti_btn.clicked.connect(self.add_id)
 
     def get_id(self):  # функция для входа в уже существующий аккаунт. для получения id пользователя из дб
+        self.table = "def_desk.txt"
         self.name = self.name_lineedit.text()
         self.password = self.password_lineedit.text()
         self.surname = self.surname_lineedit.text()
@@ -777,12 +783,14 @@ class Registration(QWidget):  # форма для регистрации
                 self.voiti_btn.hide()
                 self.change_color_btn.clicked.connect(self.change_color)
                 self.change_color_btn.show()
-                #  self.start_play_btn.show()
+                self.change_position_btn.show()
                 self.authorize = True
                 self.id_1 = self.id[0]
                 self.id_2 = self.id[1]
                 self.name_1 = self.names[0]
                 self.name_2 = self.names[1]
+                self.change_position_btn.show()
+                self.change_position_btn.clicked.connect(self.change_position)
                 con.close()
             else:
                 self.name_lineedit.clear()
@@ -837,6 +845,8 @@ class Registration(QWidget):  # форма для регистрации
                 con.commit()
                 con.close()
                 self.voiti_btn.hide()
+                self.change_position_btn.show()
+                self.change_position_btn.clicked.connect(self.change_position)
 
             else:
                 self.name_lineedit.clear()
@@ -863,8 +873,10 @@ class Registration(QWidget):  # форма для регистрации
     def change_color(self):  # функция смены цвета игрового поля
         self.color = True
 
-    def start_play(self):
-        pass
+    def change_position(self):
+        n = random.randint(1, 3)
+        self.table = ('def_desk-' + str(n) + '.txt')
+        print(self.table)
 
 
 

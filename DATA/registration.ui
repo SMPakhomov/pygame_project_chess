@@ -152,6 +152,19 @@
     <string>Смена цвета</string>
    </property>
   </widget>
+  <widget class="QPushButton" name="change_position_btn">
+   <property name="geometry">
+    <rect>
+     <x>300</x>
+     <y>270</y>
+     <width>131</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Смена расстановки</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>
