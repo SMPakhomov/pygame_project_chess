@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QMainWindow, QLabel, QLineEdit, QLCDNumber, QCheckBo
 import random
 
 
-def load_image(name, color_key=None):
+def load_image(name, color_key=None):  # загрузка изображений
     fullname = os.path.join('DATA', name)
     try:
         image = pygame.image.load(fullname)
@@ -23,12 +23,12 @@ def load_image(name, color_key=None):
     return image
 
 
-class Game:
+class Game:  # класс игры
     def __init__(self, tp=1, time=10):
         self.time = time  # время выделенное под игрока (игрок1, игрок2)
-        self.tp = tp  # вариация игры: 1 - против локального игрока
+        self.tp = tp  # вариация игры: 1 - против локального игрока (в будущем 2 - против компьютера)
 
-    def start(self):
+    def start(self):  # начало игры
         figures_desk.clear()
         desk.clear()
         for elem in figures:
@@ -39,13 +39,13 @@ class Game:
             self.desk = Desk(self.time)
         self.run()
 
-    def run(self):
-        running = True
-        is_grabbed = False
-        grabbed = (0, 0)
-        pos = (0, 0)
-        self.is_under_attacks = [False, False]
-        self.is_game_running = True
+    def run(self):  # игровой процесс
+        running = True  # состояние игры
+        is_grabbed = False  # взята ли одна из фигур на поле
+        grabbed = (0, 0)  # координаты взятой фигуры
+        pos = (0, 0)  # координаты мыши во время перетаскивания фигуры
+        self.is_under_attacks = [False, False]  # находятся ли короли под шахом
+        self.is_game_running = True  # состояние игры
         while running:
             screen.fill((250, 188, 90, 98))
             for event in pygame.event.get():
@@ -53,20 +53,20 @@ class Game:
                     running = False
                     statistic = StatisticScreen()  # при попытке выхода в процессе игры открывается окно статистики
                     # именно оно будет играть роль финального окна для пользователя
-                if event.type == pygame.MOUSEBUTTONDOWN and self.is_game_running:
+                if event.type == pygame.MOUSEBUTTONDOWN and self.is_game_running:  # процес взятия фигуры
                     is_grabbed, grabbed, pos = self.mousebuttondown(event, is_grabbed)
-                if event.type == pygame.MOUSEBUTTONUP and self.is_game_running:
+                if event.type == pygame.MOUSEBUTTONUP and self.is_game_running:  # процес отпускания фигуры
                     self.mousebuttonup(is_grabbed, grabbed, event)
                     is_grabbed = False
-                if is_grabbed and event.type == pygame.MOUSEMOTION and self.is_game_running:
+                if is_grabbed and event.type == pygame.MOUSEMOTION and self.is_game_running:  # перемещение фигуры
                     np = event.pos
                     figures_desk[grabbed[1]][grabbed[0]].rect.x += np[0] - pos[0]
                     figures_desk[grabbed[1]][grabbed[0]].rect.y += np[1] - pos[1]
                     pos = np
-            t = clock.tick(FPS) / 100000
-            self.update(is_grabbed, grabbed, t)
+            t = clock.tick(FPS) / 100000  # замер прошедшего времени
+            self.update(is_grabbed, grabbed, t)  # обновление холста
 
-    def check_mat(self):
+    def check_mat(self):  # проверка на мат
         for i in (0, 1):
             if self.is_under_attacks[i] and self.desk.kings[i].possible_move == []:
                 if not self.check_possible_solve_mat(i):
@@ -75,7 +75,7 @@ class Game:
                     else:
                         self.end_table(1)
 
-    def check_possible_solve_mat(self, nm):
+    def check_possible_solve_mat(self, nm):  # поиск решения возможного мата
         tp = "W" if nm == 0 else "D"
         for i in range(8):
             for j in range(8):
@@ -95,11 +95,11 @@ class Game:
                             return True
         return False
 
-    def update(self, is_grabbed, grabbed, t):
+    def update(self, is_grabbed, grabbed, t):  # обновление холста
         self.desk.draw_desk()
         if self.is_game_running:
             self.desk.draw_timer(t)
-        if is_grabbed:
+        if is_grabbed:  # прорисовка возможных полей для хода
             figures_desk[grabbed[1]][grabbed[0]].check_possible()
             psmv = figures_desk[grabbed[1]][grabbed[0]].possible_move
             if figures_desk[grabbed[1]][grabbed[0]].type[1] == 'K':
@@ -111,13 +111,9 @@ class Game:
         figures.draw(screen)
         self.time_check()
         self.check_mat()
-        # for elem in self.desk.kings[1:]:
-        #     for p in elem.op_moves:
-        #         pygame.draw.circle(screen, "red",
-        #                            (p[0] * 62.5 + 51.5, p[1] * 62.5 + 51.5), 15, 5)
         pygame.display.flip()
 
-    def time_check(self):
+    def time_check(self):  # проверка таймеров
         b = 0
         if self.desk.time[0] < 0:
             b = 2
@@ -126,7 +122,7 @@ class Game:
         if b:
             self.end_table(b)
 
-    def end_table(self, pl):
+    def end_table(self, pl):  # конец игры
         con = sqlite3.connect("DATA/new.db")
         cur = con.cursor()
         font = pygame.font.Font(None, 50)
@@ -169,7 +165,7 @@ class Game:
             pygame.display.flip()
             clock.tick(FPS_start_screen)
 
-    def mousebuttondown(self, event, is_grabbed):
+    def mousebuttondown(self, event, is_grabbed):  # взятие фигуры
         pos = event.pos
         grabbed = (int((event.pos[0] - 10) / 62.5), int((event.pos[1] - 10) / 62.5))
         if 10 <= event.pos[0] <= 510 and 10 <= event.pos[1] <= 510 and not is_grabbed:
@@ -182,7 +178,7 @@ class Game:
             is_grabbed = True
         return is_grabbed, grabbed, pos
 
-    def mousebuttonup(self, is_grabbed, grabbed, event):
+    def mousebuttonup(self, is_grabbed, grabbed, event):  # отпускание фигуры
         if not is_grabbed:
             return
         pnt = (int((event.pos[0] - 10) / 62.5), int((event.pos[1] - 10) / 62.5))
@@ -210,8 +206,6 @@ class Game:
             figures_desk[grabbed[1]][grabbed[0]].rect.x = grabbed[0] * 62.5 + 20.25
             figures_desk[grabbed[1]][grabbed[0]].rect.y = grabbed[1] * 62.5 + 20.25
         else:
-            # if figures_desk[pnt[1]][pnt[0]] is not None:
-            #     figures_desk[pnt[1]][pnt[0]].kill()
             figures_desk[grabbed[1]][grabbed[0]].pos = pnt[::-1]
             tmp = figures_desk[pnt[1]][pnt[0]]
             figures_desk[grabbed[1]][grabbed[0]], figures_desk[pnt[1]][pnt[0]] = None, \
@@ -237,7 +231,7 @@ class Game:
                     if (pnt[1] == 0 or pnt[1] == 7) and figures_desk[pnt[1]][pnt[0]].type[1] == "P":
                         self.pawn_on_last_point(figures_desk[pnt[1]][pnt[0]])
 
-    def pawn_on_last_point(self, pawn):
+    def pawn_on_last_point(self, pawn):  # правило превращения пешки https://ru.wikipedia.org/wiki/Превращение_пешки
         t = pawn.type[0]
         is_choosed = False
         pygame.draw.rect(screen, (250, 188, 90, 98), pygame.Rect(100, 80, 330, 55))
@@ -294,14 +288,14 @@ class Game:
             pygame.display.flip()
 
 
-class Desk:
+class Desk:  # игровая доска
     def __init__(self, time, color=((240, 240, 240), (110, 110, 110))):
         global desk, figures_desk
         self.kings = []
-        with open(ex.table, 'r') as file:
+        with open(ex.table, 'r') as file:  # загрузка доски из файла
             desk = [file.readline().split(' ') for _ in range(8)]
         figures_desk = []
-        for i in range(8):
+        for i in range(8):  # расстановка фигур по загруженному
             tmp = []
             for j in range(8):
                 if desk[i][j].rstrip('\n') != '.':
@@ -321,12 +315,12 @@ class Desk:
                 else:
                     tmp.append(None)
             figures_desk.append(tmp)
-        self.kings = self.kings[::-1]
+        self.kings = self.kings[::-1]  # короли
         self.color = color  # цвет доски - кореж из двух цветов в формате rgb
-        self.time = [time, time]
+        self.time = [time, time]  # время игроков
         self.turn = 0  # чей ход
 
-    def draw_timer(self, t):
+    def draw_timer(self, t):  # отрисовка таймера
         font = pygame.font.Font(None, 20)
         tm = self.time[0]
         txt = "Player 1 - " + str(int(tm)) + ':' + str(int((tm % 1) * 100))
@@ -340,7 +334,7 @@ class Desk:
         if self.time[self.turn] % 1 > 0.6:
             self.time[self.turn] -= 0.4
 
-    def draw_desk(self):
+    def draw_desk(self):  # отрисовка доски
         color = self.color[0]
         for i in range(8):
             for j in range(9):
@@ -359,19 +353,19 @@ class Desk:
             screen.blit(text, ((i * 62.5 + 42.25), 520))
 
 
-class Figure(pygame.sprite.Sprite):
+class Figure(pygame.sprite.Sprite):  # класс фигуры
     def __init__(self, pos, type):
         super().__init__(figures)
-        self.pos = pos
-        self.type = type.strip('\n')
-        self.image = self.load_image(self.type + '.png')
+        self.pos = pos  # позиция
+        self.type = type.strip('\n')  # тип фигуры (например 'DK' - черный король)
+        self.image = self.load_image(self.type + '.png')  # картинка фигуры
         self.rect = self.image.get_rect()
         self.rect.x = pos[1] * 62.5 + 20.25
         self.rect.y = pos[0] * 62.5 + 20.25
-        self.possible_move = []
-        self.abs_moves = []
+        self.possible_move = []  # возможные ходы фигуры, которые она может совершить
+        self.abs_moves = []  # все клетки которые фигура бьет (не обязательно может в них сделать ход)
 
-    def load_image(self, name):
+    def load_image(self, name):  # загрузка изображения для фигур
         fullname = os.path.join('DATA', name)
         if not os.path.isfile(fullname):
             print(f"Файл с изображением '{fullname}' не найден")
@@ -380,12 +374,12 @@ class Figure(pygame.sprite.Sprite):
         return image
 
 
-class Pawn(Figure):
+class Pawn(Figure):  # класс пешки
     def __init__(self, *args):
         super().__init__(*args)
-        self.first = True
+        self.first = True  # первый ли это ход данной пешкой
 
-    def check_possible(self):
+    def check_possible(self):  # поиск возможных ходов
         self.abs_moves.clear()
         self.possible_move.clear()
         tp = "W"
@@ -411,11 +405,11 @@ class Pawn(Figure):
             self.possible_move.append((self.pos[1], self.pos[0] + dl * 2))
 
 
-class Horse(Figure):
+class Horse(Figure):  # класс коня
     def __init__(self, *args):
         super().__init__(*args)
 
-    def check_possible(self):
+    def check_possible(self):  # поиск возможных ходов
         self.possible_move.clear()
         self.abs_moves.clear()
         tp = self.type[0]
@@ -424,7 +418,7 @@ class Horse(Figure):
             self.check(elem, tp)
             self.check(elem[::-1], tp)
 
-    def check(self, ar, tp):
+    def check(self, ar, tp):  # проверка полей для возможности хода в них
         if 0 <= self.pos[0] + ar[0] < 8:
             if 8 > self.pos[1] + ar[1] >= 0:
                 self.abs_moves.append((self.pos[1] + ar[1], self.pos[0] + ar[0]))
@@ -433,17 +427,17 @@ class Horse(Figure):
                     self.possible_move.append((self.pos[1] + ar[1], self.pos[0] + ar[0]))
 
 
-class Rook(Figure):
+class Rook(Figure):  # класс ладьи
     def __init__(self, *args):
         super().__init__(*args)
-        self.first = True
+        self.first = True  # первый ли это ход данной турой
 
-    def check_possible(self):
+    def check_possible(self):  # поиск возможных ходов
         self.possible_move.clear()
         self.abs_moves.clear()
         self.check()
 
-    def check(self):
+    def check(self):  # проверка клеток, для поиска возможных ходов
         tp = self.type[0]
         i = self.pos[0] - 1
         while i >= 0:
@@ -491,18 +485,18 @@ class Rook(Figure):
             i += 1
 
 
-class Bishop(Figure):
+class Bishop(Figure):  # класс слона
     def __init__(self, *args):
         super().__init__(*args)
 
-    def check_possible(self):
+    def check_possible(self):  # поиск возможных ходов
         self.possible_move.clear()
         self.abs_moves.clear()
         v = ((1, 1), (-1, -1), (-1, 1), (1, -1))
         for elem in v:
             self.check(elem)
 
-    def check(self, v):
+    def check(self, v):  # проверка клеток, для поиска возможных ходов
         tp = self.type[0]
         i = self.pos[0] + v[0]
         j = self.pos[1] + v[1]
@@ -519,11 +513,11 @@ class Bishop(Figure):
             j += v[1]
 
 
-class Queen(Rook):
+class Queen(Rook):  # класс ферзя
     def __init__(self, *args):
         super().__init__(*args)
 
-    def check_possible(self):
+    def check_possible(self):  # поиск возможных ходов
         self.possible_move.clear()
         self.abs_moves.clear()
         self.check()
@@ -531,10 +525,10 @@ class Queen(Rook):
         for elem in v:
             self.check_b(elem)
 
-    def check(self):
+    def check(self):  # проверка клеток на горизонталях, унаследованна от ладьи
         super().check()
 
-    def check_b(self, v):
+    def check_b(self, v):  # проверка клеток на диагоналях
         tp = self.type[0]
         i = self.pos[0] + v[0]
         j = self.pos[1] + v[1]
@@ -551,13 +545,13 @@ class Queen(Rook):
             j += v[1]
 
 
-class King(Figure):
+class King(Figure):  # король
     def __init__(self, *args):
         super().__init__(*args)
-        self.op_moves = []
-        self.first = True
+        self.op_moves = []  # возможные ходы противоположных фигур
+        self.first = True  # является ли ход первым
 
-    def is_under_attack(self):
+    def is_under_attack(self):  # проверка на состояние (шах / свободное)
         tp = self.type[0]
         self.op_moves.clear()
         for row in figures_desk:
@@ -569,7 +563,7 @@ class King(Figure):
             return True
         return False
 
-    def check_possible(self):
+    def check_possible(self):  # поиск возможных ходов
         pos = self.pos
         self.possible_move.clear()
         self.abs_moves.clear()
@@ -583,7 +577,7 @@ class King(Figure):
                                                         figures_desk[y][x].type[0] != self.type[0]):
                         self.possible_move.append((x, y))
 
-    def castling(self):
+    def castling(self):  # правило рокировки https://ru.wikipedia.org/wiki/Рокировка
         y = 7 if self.type[0] == 'W' else 0
         res = []
         flag = True
