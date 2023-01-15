@@ -675,6 +675,8 @@ def rating(id):  # функция для составлений рейтинга
                             where person like ?''', (id,)).fetchall())[2:-2]
     loose = result_person[result_person.find(',') + 2:]
     win = result_person[:result_person.find(',')]
+    if not loose:
+        loose = '0'
     numer = tabel.index(int(loose) - int(win))
     return numer + 1
 
