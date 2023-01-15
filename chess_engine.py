@@ -24,7 +24,7 @@ def load_image(name, color_key=None):
 
 
 class Game:
-    def __init__(self, tp=1, time=10):
+    def __init__(self, tp=1, time=0.010):
         self.time = time  # время выделенное под игрока (игрок1, игрок2)
         self.tp = tp  # вариация игры: 1 - против локального игрока, 2 - против ИИ
 
@@ -142,6 +142,7 @@ class Game:
                                         (select win from play
                                         where person like ?) + 1
                                         where person like ?''', (ex.id_2, ex.id_2)).fetchall())
+            ex.agree = False
         elif pl == 1 and ex.agree:
             result = str(cur.execute('''update play set win = 
                                                         (select win from play
@@ -151,7 +152,7 @@ class Game:
                                     (select loose from play
                                     where person like ?) + 1
                                     where person like ?''', (ex.id_2, ex.id_2)).fetchall()
-        ex.agree = False
+            ex.agree = False
         con.commit()
         con.close()
         while True:
@@ -669,12 +670,16 @@ def rating(id):  # функция для составлений рейтинга
     result = result.split("), (")
     tabel = []
     for i in range(len(result)):
-        tabel.append(int(result[i][-1]) - int(result[i][0]))
+        loose = int(result[i][result[i].find(',') + 2])
+        win = int(result[i][:result[i].find(',')])
+        tabel.append(loose - win)
     tabel = sorted(tabel, reverse=True)
     result_person = str(cur.execute('''select loose, win 
                             from play
                             where person like ?''', (id,)).fetchall())[2:-2]
-    numer = tabel.index(int(result_person[-1]) - int(result_person[0]))
+    loose = result_person[result_person.find(',') + 2:]
+    win = result_person[:result_person.find(',')]
+    numer = tabel.index(int(loose) - int(win))
     return numer + 1
 
 
@@ -714,6 +719,7 @@ class StatisticScreen():  # окно просмотра статистики
                     sys.exit()
                 elif event.type == pygame.KEYDOWN or \
                         event.type == pygame.MOUSEBUTTONDOWN:
+
                     game = Game()  # при нажатии на экран начинается игра
                     ex.agree = True  # снова становится возможна запись о победе/проигрыше
                     game.start()
