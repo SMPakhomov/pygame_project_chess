@@ -711,6 +711,7 @@ class StatisticScreen():  # окно просмотра статистики
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()  # в этом моменте происходит окончательный выход из игры
+                    sys.exit()
                 elif event.type == pygame.KEYDOWN or \
                         event.type == pygame.MOUSEBUTTONDOWN:
                     game = Game()  # при нажатии на экран начинается игра
@@ -884,8 +885,3 @@ if __name__ == '__main__':
 
 screen = pygame.display.set_mode((width, height))
 start_screen = StartScreen()
-
-game = Game()
-game.start()
-
-pygame.quit()
